@@ -23,6 +23,7 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    // use this to access swagger documentation page (https://localhost:7067/swagger/index.html)
     app.UseSwagger();
     app.UseSwaggerUI();
 }
