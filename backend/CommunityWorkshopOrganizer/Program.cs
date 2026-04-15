@@ -2,8 +2,9 @@ using CommunityWorkshopOrganizer.Data;
 using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApiContext>(options =>
-    options.UseInMemoryDatabase("CommunityWorkshopOrganizerDb"));
+    options.UseSqlite(connectionString));
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
