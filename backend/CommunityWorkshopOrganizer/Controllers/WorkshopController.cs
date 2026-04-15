@@ -15,8 +15,8 @@ namespace CommunityWorkshopOrganizer.Controllers
             context = apiContext;
         }
 
-        [HttpPut]
-        public ActionResult<IEnumerable<Workshop>> createWorkShop([FromBody] Workshop workshop)
+        [HttpPost]
+        public ActionResult<IEnumerable<Workshop>> CreateWorkShop([FromBody] Workshop workshop)
         {
             context.Workshops.Add(workshop);
             context.SaveChanges();
