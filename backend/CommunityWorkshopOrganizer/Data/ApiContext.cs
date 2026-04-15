@@ -25,18 +25,21 @@ namespace CommunityWorkshopOrganizer.Data
                 .HasMany(u => u.Workshops)
                 .WithOne(w => w.Organizer)
                 .HasForeignKey(w => w.OrganizerId)
-                .OnDelete(DeleteBehavior.SetNull);
-            modelBuilder.Entity<User>()
+                .OnDelete(DeleteBehavior.Cascade); 
+
+          modelBuilder.Entity<User>()
                 .HasMany(u => u.Registrations)
                 .WithOne(r => r.User)
                 .HasForeignKey(r => r.UserId)
-                .OnDelete(DeleteBehavior.SetNull);
-            modelBuilder.Entity<Workshop>()
+                .OnDelete(DeleteBehavior.Cascade); 
+
+          modelBuilder.Entity<Workshop>()
                 .HasMany(w => w.Registrations)
                 .WithOne(r => r.Workshop)
                 .HasForeignKey(r => r.WorkshopId)
                 .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<Workshop>()
+
+          modelBuilder.Entity<Workshop>()
                 .HasMany(w => w.Resources)
                 .WithOne(r => r.Workshop)
                 .HasForeignKey(r => r.WorkshopId)
