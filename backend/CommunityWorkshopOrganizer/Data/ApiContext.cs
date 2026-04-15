@@ -20,7 +20,8 @@ namespace CommunityWorkshopOrganizer.Data
             }
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
+        { 
+
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Workshops)
                 .WithOne(w => w.Organizer)
