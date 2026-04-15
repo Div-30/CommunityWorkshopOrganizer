@@ -11,6 +11,37 @@ namespace CommunityWorkshopOrganizer.Data
         public DbSet<Registration> Registrations { get; set; }
         public ApiContext(DbContextOptions<ApiContext> options) : base(options) { 
         }
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                // This acts as a backup in case Program.cs isn't read during migration
+                optionsBuilder.UseSqlite("Data Source=CommunityWorkShopDatabase.db");
+            }
+        }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Workshops)
+                .WithOne(w => w.Organizer)
+                .HasForeignKey(w => w.OrganizerId)
+                .OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Registrations)
+                .WithOne(r => r.User)
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<Workshop>()
+                .HasMany(w => w.Registrations)
+                .WithOne(r => r.Workshop)
+                .HasForeignKey(r => r.WorkshopId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Workshop>()
+                .HasMany(w => w.Resources)
+                .WithOne(r => r.Workshop)
+                .HasForeignKey(r => r.WorkshopId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
 
     }
 }
