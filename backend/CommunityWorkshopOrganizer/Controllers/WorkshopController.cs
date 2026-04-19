@@ -24,6 +24,10 @@ namespace CommunityWorkshopOrganizer.Controllers
             {
                 return BadRequest(result.Message);
             }
+            if (result.Status == WorkshopResultStatus.NotFound)
+            {
+                return NotFound(result.Message);
+            }
 
             return CreatedAtAction(nameof(GetWorkshopById), new { id = result.Data!.WorkshopId }, result.Data);
         }

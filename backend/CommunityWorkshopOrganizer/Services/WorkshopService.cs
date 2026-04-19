@@ -29,8 +29,8 @@ namespace CommunityWorkshopOrganizer.Services
                 return (WorkshopResultStatus.NotFound, "Organizer not found. Please provide a valid OrganizerId.", null);
             }
 
-            workshop.Organizer = null; 
-            workshop.Registrations = null;
+            workshop.Organizer = null!; 
+            workshop.Registrations = null!;
 
             workshop.CreatedAt = DateTime.UtcNow;
 
