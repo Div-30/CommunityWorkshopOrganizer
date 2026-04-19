@@ -25,7 +25,7 @@ namespace CommunityWorkshopOrganizer.Controllers
                 return BadRequest(result.Message);
             }
 
-            return CreatedAtAction(nameof(GetUserById), new { id = result.Data.UserId }, result.Data);
+            return CreatedAtAction(nameof(GetUserById), new { id = result.Data!.UserId }, result.Data);
         }
 
         [HttpGet]
