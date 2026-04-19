@@ -1,7 +1,6 @@
-﻿using CommunityWorkshopOrganizer.Data;
-using CommunityWorkshopOrganizer.Models;
+﻿using CommunityWorkshopOrganizer.Models;
+using CommunityWorkshopOrganizer.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CommunityWorkshopOrganizer.Controllers
 {
@@ -9,66 +8,38 @@ namespace CommunityWorkshopOrganizer.Controllers
     [ApiController]
     public class RegistrationController : ControllerBase
     {
-        private readonly ApiContext _context;
+        private readonly IRegistrationService _registrationService;
 
-        public RegistrationController(ApiContext context)
+        public RegistrationController(IRegistrationService registrationService)
         {
-            _context = context;
+            _registrationService = registrationService;
         }
 
         [HttpPost]
         public ActionResult<Registration> CreateRegistration([FromBody] Registration registration)
         {
-            var workshop = _context.Workshops.Find(registration.WorkshopId);
-            if (workshop == null)
-            {
-                return NotFound("Workshop not found.");
-            }
-
-            var existingRegistration = _context.Registrations
-                .FirstOrDefault(r => r.UserId == registration.UserId && r.WorkshopId == registration.WorkshopId);
+            var result = _registrationService.RegisterUser(registration);
             
-            if (existingRegistration != null)
+            if (!result.Success)
             {
-                return BadRequest("This user is already registered for this workshop.");
+                if (result.Message == "Workshop not found.") return NotFound(result.Message);
+                return BadRequest(result.Message);
             }
 
-            var currentAttendees = _context.Registrations
-                .Count(r => r.WorkshopId == registration.WorkshopId && r.Status == "Confirmed");
-
-            if (currentAttendees >= workshop.Capacity)
-            {
-                registration.Status = "Waitlisted";
-            }
-            else
-            {
-                registration.Status = "Confirmed";
-            }
-
-            registration.RegisteredAt = DateTime.UtcNow;
-
-            _context.Registrations.Add(registration);
-            _context.SaveChanges();
-
-            return Ok(registration);
+            return Ok(result.Data);
         }
         
         [HttpGet("workshop/{workshopId}")]
         public ActionResult<IEnumerable<Registration>> GetWorkshopAttendees(int workshopId)
         {
-            var workshopExists = _context.Workshops.Any(w => w.WorkshopId == workshopId);
-            if (!workshopExists)
+            var result = _registrationService.GetAttendees(workshopId);
+
+            if (!result.Success)
             {
-                return NotFound("Workshop not found.");
+                return NotFound(result.Message);
             }
 
-            var attendees = _context.Registrations
-                .Include(r => r.User) 
-                .Where(r => r.WorkshopId == workshopId)
-                .OrderBy(r => r.RegisteredAt)
-                .ToList();
-
-            return Ok(attendees);
+            return Ok(result.Data);
         }
     }
 }
