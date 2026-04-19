@@ -20,7 +20,6 @@ namespace CommunityWorkshopOrganizer.Controllers
         {
             var result = _registrationService.RegisterUser(registration);
             
-            // Clean, strongly-typed flow control!
             if (result.Status == RegistrationResultStatus.NotFound)
             {
                 return NotFound(result.Message);

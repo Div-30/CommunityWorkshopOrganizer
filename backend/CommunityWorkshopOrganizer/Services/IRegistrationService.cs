@@ -6,7 +6,8 @@ namespace CommunityWorkshopOrganizer.Services
     {
         Success,
         NotFound,
-        Duplicate
+        Duplicate,
+        ValidationError
     }
 
     public interface IRegistrationService
