@@ -12,11 +12,16 @@ namespace CommunityWorkshopOrganizer.Services
             _context = context;
         }
 
-        public (bool Success, string Message, User? Data) CreateUser(User user)
+        public (UserResultStatus Status, string Message, User? Data) CreateUser(User user)
         {
-           if (string.IsNullOrWhiteSpace(user.Email) || string.IsNullOrWhiteSpace(user.FullName))
+            if (string.IsNullOrWhiteSpace(user.Email) || string.IsNullOrWhiteSpace(user.FullName))
             {
                 return (UserResultStatus.ValidationError, "Email and Full Name are required.", null);
+            }
+
+            if (_context.Users.Any(u => u.Email == user.Email))
+            {
+                return (UserResultStatus.Duplicate, "A user with this email address already exists.", null);
             }
 
             user.CreatedAt = DateTime.UtcNow;
@@ -27,22 +32,22 @@ namespace CommunityWorkshopOrganizer.Services
             return (UserResultStatus.Success, "User created successfully.", user);
         }
 
-        public (bool Success, string Message, IEnumerable<User>? Data) GetAllUsers()
+        public (UserResultStatus Status, string Message, IEnumerable<User>? Data) GetAllUsers()
         {
             var users = _context.Users.ToList();
-            return (true, "Users retrieved successfully.", users);
+            return (UserResultStatus.Success, "Users retrieved successfully.", users);
         }
 
-        public (bool Success, string Message, User? Data) GetUserById(int userId)
+        public (UserResultStatus Status, string Message, User? Data) GetUserById(int userId)
         {
             var user = _context.Users.Find(userId);
             
             if (user == null)
             {
-                return (false, "User not found.", null);
+                return (UserResultStatus.NotFound, "User not found.", null);
             }
 
-            return (true, "User found.", user);
+            return (UserResultStatus.Success, "User found.", user);
         }
     }
 }
