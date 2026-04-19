@@ -24,7 +24,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             {
                 return NotFound(result.Message);
             }
-            if (result.Status == RegistrationResultStatus.Duplicate)
+
+            if (result.Status == RegistrationResultStatus.Duplicate || 
+                result.Status == RegistrationResultStatus.ValidationError)
             {
                 return BadRequest(result.Message);
             }
