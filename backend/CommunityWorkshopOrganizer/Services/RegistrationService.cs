@@ -13,12 +13,12 @@ namespace CommunityWorkshopOrganizer.Services
             _context = context;
         }
 
-        public (bool Success, string Message, Registration? Data) RegisterUser(Registration registration)
+        public (RegistrationResultStatus Status, string Message, Registration? Data) RegisterUser(Registration registration)
         {
             var workshop = _context.Workshops.Find(registration.WorkshopId);
             if (workshop == null) 
             {
-                return (false, "Workshop not found.", null);
+                return (RegistrationResultStatus.NotFound, "Workshop not found.", null);
             }
 
             var existingRegistration = _context.Registrations
@@ -26,7 +26,7 @@ namespace CommunityWorkshopOrganizer.Services
             
             if (existingRegistration != null) 
             {
-                return (false, "This user is already registered for this workshop.", null);
+                return (RegistrationResultStatus.Duplicate, "This user is already registered for this workshop.", null);
             }
 
             var currentAttendees = _context.Registrations
@@ -38,15 +38,15 @@ namespace CommunityWorkshopOrganizer.Services
             _context.Registrations.Add(registration);
             _context.SaveChanges();
 
-            return (true, "Registration successful.", registration);
+            return (RegistrationResultStatus.Success, "Registration successful.", registration);
         }
 
-        public (bool Success, string Message, IEnumerable<Registration>? Data) GetAttendees(int workshopId)
+        public (RegistrationResultStatus Status, string Message, IEnumerable<Registration>? Data) GetAttendees(int workshopId)
         {
             var workshopExists = _context.Workshops.Any(w => w.WorkshopId == workshopId);
             if (!workshopExists) 
             {
-                return (false, "Workshop not found.", null);
+                return (RegistrationResultStatus.NotFound, "Workshop not found.", null);
             }
 
             var attendees = _context.Registrations
@@ -55,7 +55,7 @@ namespace CommunityWorkshopOrganizer.Services
                 .OrderBy(r => r.RegisteredAt)
                 .ToList();
 
-            return (true, "Attendees retrieved.", attendees);
+            return (RegistrationResultStatus.Success, "Attendees retrieved.", attendees);
         }
     }
 }
