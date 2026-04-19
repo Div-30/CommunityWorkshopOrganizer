@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations;
 
 namespace CommunityWorkshopOrganizer.Models
 {
@@ -8,6 +9,7 @@ namespace CommunityWorkshopOrganizer.Models
         public int UserId { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        [JsonIgnore]
         public string PasswordHash { get; set; } = string.Empty;
         public string UserRole { get; set; } = string.Empty; // "Attendee" or "Organizer"
         public DateTime CreatedAt { get; set; }
