@@ -23,6 +23,14 @@ namespace CommunityWorkshopOrganizer.Services
             {
                 return (WorkshopResultStatus.ValidationError, "Workshop capacity must be greater than zero.", null);
             }
+            var organizerExists = _context.Users.Any(u => u.UserId == workshop.OrganizerId);
+            if (!organizerExists)
+            {
+                return (WorkshopResultStatus.NotFound, "Organizer not found. Please provide a valid OrganizerId.", null);
+            }
+
+            workshop.Organizer = null; 
+            workshop.Registrations = null;
 
             workshop.CreatedAt = DateTime.UtcNow;
 
