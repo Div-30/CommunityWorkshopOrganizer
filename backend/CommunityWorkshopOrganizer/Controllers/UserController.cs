@@ -20,11 +20,10 @@ namespace CommunityWorkshopOrganizer.Controllers
         {
             var result = _userService.CreateUser(user);
             
-            if (!result.Success)
+            if (result.Status == UserResultStatus.ValidationError || result.Status == UserResultStatus.Duplicate)
             {
                 return BadRequest(result.Message);
             }
-
             return CreatedAtAction(nameof(GetUserById), new { id = result.Data!.UserId }, result.Data);
         }
 
@@ -40,7 +39,7 @@ namespace CommunityWorkshopOrganizer.Controllers
         {
             var result = _userService.GetUserById(id);
 
-            if (!result.Success)
+            if (result.Status == UserResultStatus.NotFound)
             {
                 return NotFound(result.Message);
             }
