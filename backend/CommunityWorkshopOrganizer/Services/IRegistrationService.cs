@@ -2,9 +2,16 @@ using CommunityWorkshopOrganizer.Models;
 
 namespace CommunityWorkshopOrganizer.Services
 {
+    public enum RegistrationResultStatus
+    {
+        Success,
+        NotFound,
+        Duplicate
+    }
+
     public interface IRegistrationService
     {
-        (bool Success, string Message, Registration? Data) RegisterUser(Registration registration);
-        (bool Success, string Message, IEnumerable<Registration>? Data) GetAttendees(int workshopId);
+        (RegistrationResultStatus Status, string Message, Registration? Data) RegisterUser(Registration registration);
+        (RegistrationResultStatus Status, string Message, IEnumerable<Registration>? Data) GetAttendees(int workshopId);
     }
 }
