@@ -14,20 +14,17 @@ namespace CommunityWorkshopOrganizer.Services
 
         public (bool Success, string Message, User? Data) CreateUser(User user)
         {
-            // 1. Validation
-            if (_context.Users.Any(u => u.Email == user.Email))
+           if (string.IsNullOrWhiteSpace(user.Email) || string.IsNullOrWhiteSpace(user.FullName))
             {
-                return (false, "A user with this email address already exists.", null);
+                return (UserResultStatus.ValidationError, "Email and Full Name are required.", null);
             }
 
-            // 2. Set the timestamp
             user.CreatedAt = DateTime.UtcNow;
             
-            // 3. Save to database
             _context.Users.Add(user);
             _context.SaveChanges();
 
-            return (true, "User created successfully.", user);
+            return (UserResultStatus.Success, "User created successfully.", user);
         }
 
         public (bool Success, string Message, IEnumerable<User>? Data) GetAllUsers()
