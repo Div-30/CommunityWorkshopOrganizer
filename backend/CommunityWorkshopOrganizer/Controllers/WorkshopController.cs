@@ -1,6 +1,5 @@
-﻿using CommunityWorkshopOrganizer.Data;
-using CommunityWorkshopOrganizer.Models;
-using Microsoft.AspNetCore.Http;
+﻿using CommunityWorkshopOrganizer.Models;
+using CommunityWorkshopOrganizer.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CommunityWorkshopOrganizer.Controllers
@@ -9,20 +8,44 @@ namespace CommunityWorkshopOrganizer.Controllers
     [ApiController]
     public class WorkshopController : ControllerBase
     {
-        private readonly ApiContext context;
-        public WorkshopController(ApiContext apiContext)
+        private readonly IWorkshopService _workshopService;
+
+        public WorkshopController(IWorkshopService workshopService)
         {
-            context = apiContext;
+            _workshopService = workshopService;
         }
 
         [HttpPost]
-        public ActionResult<IEnumerable<Workshop>> CreateWorkShop([FromBody] Workshop workshop)
+        public ActionResult<Workshop> CreateWorkshop([FromBody] Workshop workshop)
         {
-            context.Workshops.Add(workshop);
-            context.SaveChanges();
-            return Ok(workshop);
+            var result = _workshopService.CreateWorkshop(workshop);
+            
+            if (result.Status == WorkshopResultStatus.ValidationError)
+            {
+                return BadRequest(result.Message);
+            }
 
+            return CreatedAtAction(nameof(GetWorkshopById), new { id = result.Data!.WorkshopId }, result.Data);
         }
 
+        [HttpGet]
+        public ActionResult<IEnumerable<Workshop>> GetAllWorkshops()
+        {
+            var result = _workshopService.GetAllWorkshops();
+            return Ok(result.Data);
+        }
+
+        [HttpGet("{id}")]
+        public ActionResult<Workshop> GetWorkshopById(int id)
+        {
+            var result = _workshopService.GetWorkshopById(id);
+
+            if (result.Status == WorkshopResultStatus.NotFound)
+            {
+                return NotFound(result.Message);
+            }
+
+            return Ok(result.Data);
+        }
     }
 }
