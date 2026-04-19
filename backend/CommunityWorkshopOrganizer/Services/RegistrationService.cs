@@ -15,6 +15,10 @@ namespace CommunityWorkshopOrganizer.Services
 
         public (RegistrationResultStatus Status, string Message, Registration? Data) RegisterUser(Registration registration)
         {
+            if (registration.UserId <= 0 || registration.WorkshopId <= 0)
+            {
+                return (RegistrationResultStatus.ValidationError, "Valid User ID and Workshop ID are required.", null);
+            }
             var workshop = _context.Workshops.Find(registration.WorkshopId);
             if (workshop == null) 
             {
