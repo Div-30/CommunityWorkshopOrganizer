@@ -20,9 +20,13 @@ namespace CommunityWorkshopOrganizer.Controllers
         {
             var result = _registrationService.RegisterUser(registration);
             
-            if (!result.Success)
+            // Clean, strongly-typed flow control!
+            if (result.Status == RegistrationResultStatus.NotFound)
             {
-                if (result.Message == "Workshop not found.") return NotFound(result.Message);
+                return NotFound(result.Message);
+            }
+            if (result.Status == RegistrationResultStatus.Duplicate)
+            {
                 return BadRequest(result.Message);
             }
 
@@ -34,7 +38,7 @@ namespace CommunityWorkshopOrganizer.Controllers
         {
             var result = _registrationService.GetAttendees(workshopId);
 
-            if (!result.Success)
+            if (result.Status == RegistrationResultStatus.NotFound)
             {
                 return NotFound(result.Message);
             }
