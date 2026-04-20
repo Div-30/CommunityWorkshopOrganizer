@@ -13,5 +13,6 @@
         public DateTime CreatedAt { get; set; }
         public List<Registration> Registrations { get; set; } = new ();
         public List<Resource> Resources { get; set; } = new ();
+        public string Status { get; set; } = "Pending";
     }
 }

@@ -37,7 +37,6 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//  Add this line to make backend accept frontend codes
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontEnd", policy =>
