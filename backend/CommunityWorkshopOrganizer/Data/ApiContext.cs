@@ -9,6 +9,7 @@ namespace CommunityWorkshopOrganizer.Data
         public DbSet<Resource> Resources { get; set; }
         public DbSet<Workshop> Workshops { get; set; }
         public DbSet<Registration> Registrations { get; set; }
+        public DbSet<OrganiserRequest> OrganiserRequests { get; set; }
         public ApiContext(DbContextOptions<ApiContext> options) : base(options) { 
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -7,12 +7,15 @@ namespace CommunityWorkshopOrganizer.Services
         Success,
         NotFound,
         Duplicate,
-        ValidationError
+        ValidationError,
+        Forbidden
     }
 
     public interface IRegistrationService
     {
-        (RegistrationResultStatus Status, string Message, Registration? Data) RegisterUser(Registration registration);
+        (RegistrationResultStatus Status, string Message, Registration? Data) RegisterUser(int userId, int workshopId);
+        (RegistrationResultStatus Status, string Message) CancelRegistration(int registrationId, int userId);
         (RegistrationResultStatus Status, string Message, IEnumerable<Registration>? Data) GetAttendees(int workshopId);
+        (RegistrationResultStatus Status, string Message, IEnumerable<Registration>? Data) GetUserRegistrations(int userId);
     }
 }

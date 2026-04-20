@@ -13,31 +13,38 @@ namespace CommunityWorkshopOrganizer.Services
             _context = context;
         }
 
-        public (RegistrationResultStatus Status, string Message, Registration? Data) RegisterUser(Registration registration)
+        public (RegistrationResultStatus Status, string Message, Registration? Data) RegisterUser(int userId, int workshopId)
         {
-            if (registration.UserId <= 0 || registration.WorkshopId <= 0)
-            {
-                return (RegistrationResultStatus.ValidationError, "Valid User ID and Workshop ID are required.", null);
-            }
-            var workshop = _context.Workshops.Find(registration.WorkshopId);
-            if (workshop == null) 
+            var workshop = _context.Workshops.Find(workshopId);
+            if (workshop == null)
             {
                 return (RegistrationResultStatus.NotFound, "Workshop not found.", null);
             }
 
-            var existingRegistration = _context.Registrations
-                .FirstOrDefault(r => r.UserId == registration.UserId && r.WorkshopId == registration.WorkshopId);
-            
-            if (existingRegistration != null) 
+            // Attendees can only book approved workshops
+            if (workshop.Status != "Approved")
             {
-                return (RegistrationResultStatus.Duplicate, "This user is already registered for this workshop.", null);
+                return (RegistrationResultStatus.ValidationError, "This workshop is not yet approved and cannot be booked.", null);
+            }
+
+            var existingRegistration = _context.Registrations
+                .FirstOrDefault(r => r.UserId == userId && r.WorkshopId == workshopId);
+
+            if (existingRegistration != null)
+            {
+                return (RegistrationResultStatus.Duplicate, "You are already registered for this workshop.", null);
             }
 
             var currentAttendees = _context.Registrations
-                .Count(r => r.WorkshopId == registration.WorkshopId && r.Status == "Confirmed");
+                .Count(r => r.WorkshopId == workshopId && r.Status == "Confirmed");
 
-            registration.Status = currentAttendees >= workshop.Capacity ? "Waitlisted" : "Confirmed";
-            registration.RegisteredAt = DateTime.UtcNow;
+            var registration = new Registration
+            {
+                UserId = userId,
+                WorkshopId = workshopId,
+                Status = currentAttendees >= workshop.Capacity ? "Waitlisted" : "Confirmed",
+                RegisteredAt = DateTime.UtcNow
+            };
 
             _context.Registrations.Add(registration);
             _context.SaveChanges();
@@ -45,21 +52,80 @@ namespace CommunityWorkshopOrganizer.Services
             return (RegistrationResultStatus.Success, "Registration successful.", registration);
         }
 
+        public (RegistrationResultStatus Status, string Message) CancelRegistration(int registrationId, int userId)
+        {
+            var registration = _context.Registrations.Find(registrationId);
+
+            if (registration == null)
+            {
+                return (RegistrationResultStatus.NotFound, "Registration not found.");
+            }
+
+            // Attendees can only cancel their own registrations
+            if (registration.UserId != userId)
+            {
+                return (RegistrationResultStatus.Forbidden, "You are not authorised to cancel this registration.");
+            }
+
+            if (registration.Status == "Cancelled")
+            {
+                return (RegistrationResultStatus.ValidationError, "This registration is already cancelled.");
+            }
+
+            var wasConfirmed = registration.Status == "Confirmed";
+            registration.Status = "Cancelled";
+
+            // Auto-promote the first waitlisted attendee if a confirmed spot just freed up
+            if (wasConfirmed)
+            {
+                var nextWaitlisted = _context.Registrations
+                    .Where(r => r.WorkshopId == registration.WorkshopId && r.Status == "Waitlisted")
+                    .OrderBy(r => r.RegisteredAt)
+                    .FirstOrDefault();
+
+                if (nextWaitlisted != null)
+                {
+                    nextWaitlisted.Status = "Confirmed";
+                }
+            }
+
+            _context.SaveChanges();
+
+            return (RegistrationResultStatus.Success, "Registration cancelled successfully.");
+        }
+
         public (RegistrationResultStatus Status, string Message, IEnumerable<Registration>? Data) GetAttendees(int workshopId)
         {
             var workshopExists = _context.Workshops.Any(w => w.WorkshopId == workshopId);
-            if (!workshopExists) 
+            if (!workshopExists)
             {
                 return (RegistrationResultStatus.NotFound, "Workshop not found.", null);
             }
 
             var attendees = _context.Registrations
-                .Include(r => r.User) 
+                .Include(r => r.User)
                 .Where(r => r.WorkshopId == workshopId)
                 .OrderBy(r => r.RegisteredAt)
                 .ToList();
 
             return (RegistrationResultStatus.Success, "Attendees retrieved.", attendees);
+        }
+
+        public (RegistrationResultStatus Status, string Message, IEnumerable<Registration>? Data) GetUserRegistrations(int userId)
+        {
+            var userExists = _context.Users.Any(u => u.UserId == userId);
+            if (!userExists)
+            {
+                return (RegistrationResultStatus.NotFound, "User not found.", null);
+            }
+
+            var registrations = _context.Registrations
+                .Include(r => r.Workshop)
+                .Where(r => r.UserId == userId)
+                .OrderBy(r => r.RegisteredAt)
+                .ToList();
+
+            return (RegistrationResultStatus.Success, "User registrations retrieved.", registrations);
         }
     }
 }

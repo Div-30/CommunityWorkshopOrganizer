@@ -1,6 +1,7 @@
-﻿using CommunityWorkshopOrganizer.Models;
 using CommunityWorkshopOrganizer.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CommunityWorkshopOrganizer.Controllers
 {
@@ -15,34 +16,67 @@ namespace CommunityWorkshopOrganizer.Controllers
             _registrationService = registrationService;
         }
 
+        // POST /api/registration — Attendee only; UserId auto-set from token
         [HttpPost]
-        public ActionResult<Registration> CreateRegistration([FromBody] Registration registration)
+        [Authorize(Roles = "Attendee")]
+        public IActionResult RegisterForWorkshop([FromBody] int workshopId)
         {
-            var result = _registrationService.RegisterUser(registration);
-            
-            if (result.Status == RegistrationResultStatus.NotFound)
-            {
-                return NotFound(result.Message);
-            }
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = _registrationService.RegisterUser(userId, workshopId);
 
-            if (result.Status == RegistrationResultStatus.Duplicate || 
+            if (result.Status == RegistrationResultStatus.NotFound)
+                return NotFound(result.Message);
+
+            if (result.Status == RegistrationResultStatus.Duplicate ||
                 result.Status == RegistrationResultStatus.ValidationError)
-            {
                 return BadRequest(result.Message);
-            }
 
             return Ok(result.Data);
         }
-        
+
+        // DELETE /api/registration/{id} — Attendee only; can only cancel their own
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Attendee")]
+        public IActionResult CancelRegistration(int id)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = _registrationService.CancelRegistration(id, userId);
+
+            if (result.Status == RegistrationResultStatus.NotFound)
+                return NotFound(result.Message);
+
+            if (result.Status == RegistrationResultStatus.Forbidden)
+                return StatusCode(403, result.Message);
+
+            if (result.Status == RegistrationResultStatus.ValidationError)
+                return BadRequest(result.Message);
+
+            return Ok(new { Message = result.Message });
+        }
+
+        // GET /api/registration/workshop/{workshopId} — Organiser and Admin only
         [HttpGet("workshop/{workshopId}")]
-        public ActionResult<IEnumerable<Registration>> GetWorkshopAttendees(int workshopId)
+        [Authorize(Roles = "Organiser,Admin")]
+        public IActionResult GetWorkshopAttendees(int workshopId)
         {
             var result = _registrationService.GetAttendees(workshopId);
 
             if (result.Status == RegistrationResultStatus.NotFound)
-            {
                 return NotFound(result.Message);
-            }
+
+            return Ok(result.Data);
+        }
+
+        // GET /api/registration/my — Attendee only: view own bookings
+        [HttpGet("my")]
+        [Authorize(Roles = "Attendee")]
+        public IActionResult GetMyBookings()
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = _registrationService.GetUserRegistrations(userId);
+
+            if (result.Status == RegistrationResultStatus.NotFound)
+                return NotFound(result.Message);
 
             return Ok(result.Data);
         }

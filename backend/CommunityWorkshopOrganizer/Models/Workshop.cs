@@ -1,4 +1,4 @@
-﻿namespace CommunityWorkshopOrganizer.Models
+namespace CommunityWorkshopOrganizer.Models
 {
     public class Workshop
     {
@@ -14,5 +14,6 @@
         public List<Registration> Registrations { get; set; } = new ();
         public List<Resource> Resources { get; set; } = new ();
         public string Status { get; set; } = "Pending";
+        public string? RejectionReason { get; set; }
     }
 }

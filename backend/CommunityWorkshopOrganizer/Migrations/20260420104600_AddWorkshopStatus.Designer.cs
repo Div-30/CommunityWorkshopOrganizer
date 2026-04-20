@@ -3,6 +3,7 @@ using System;
 using CommunityWorkshopOrganizer.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,42 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CommunityWorkshopOrganizer.Migrations
 {
     [DbContext(typeof(ApiContext))]
-    partial class ApiContextModelSnapshot : ModelSnapshot
+    [Migration("20260420104600_AddWorkshopStatus")]
+    partial class AddWorkshopStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
-
-            modelBuilder.Entity("CommunityWorkshopOrganizer.Models.OrganiserRequest", b =>
-                {
-                    b.Property<int>("RequestId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RejectionReason")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("RequestId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("OrganiserRequests");
-                });
 
             modelBuilder.Entity("CommunityWorkshopOrganizer.Models.Registration", b =>
                 {
@@ -154,9 +127,6 @@ namespace CommunityWorkshopOrganizer.Migrations
                     b.Property<int?>("OrganizerId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("RejectionReason")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("SpeakerName")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -174,17 +144,6 @@ namespace CommunityWorkshopOrganizer.Migrations
                     b.HasIndex("OrganizerId");
 
                     b.ToTable("Workshops");
-                });
-
-            modelBuilder.Entity("CommunityWorkshopOrganizer.Models.OrganiserRequest", b =>
-                {
-                    b.HasOne("CommunityWorkshopOrganizer.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CommunityWorkshopOrganizer.Models.Registration", b =>
