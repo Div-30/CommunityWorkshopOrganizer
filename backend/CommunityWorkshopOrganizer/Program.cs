@@ -50,6 +50,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApiContext>();
+    dbContext.Database.Migrate(); 
+}
+
 if (app.Environment.IsDevelopment())
 {
     // use this to access swagger documentation page (https://localhost:7067/swagger/index.html)

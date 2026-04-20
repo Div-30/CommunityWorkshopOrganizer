@@ -50,7 +50,7 @@ namespace CommunityWorkshopOrganizer.Migrations
                         column: x => x.OrganizerId,
                         principalTable: "Users",
                         principalColumn: "UserId",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -72,7 +72,7 @@ namespace CommunityWorkshopOrganizer.Migrations
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "UserId",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Registrations_Workshops_WorkshopId",
                         column: x => x.WorkshopId,

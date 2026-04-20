@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CommunityWorkshopOrganizer.Migrations
 {
     [DbContext(typeof(ApiContext))]
-    [Migration("20260415100859_UpdateCascadeDelete")]
-    partial class UpdateCascadeDelete
+    [Migration("20260420085222_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

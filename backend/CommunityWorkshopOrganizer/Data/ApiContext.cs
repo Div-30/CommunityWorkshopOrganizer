@@ -1,4 +1,4 @@
-﻿using CommunityWorkshopOrganizer.Models;
+using CommunityWorkshopOrganizer.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace CommunityWorkshopOrganizer.Data
@@ -16,7 +16,7 @@ namespace CommunityWorkshopOrganizer.Data
             if (!optionsBuilder.IsConfigured)
             {
                 // This acts as a backup in case Program.cs isn't read during migration
-                optionsBuilder.UseSqlite("Data Source=CommunityWorkShopDatabase.db");
+                optionsBuilder.UseSqlite("Data Source=CommunityWorkshopDatabase.db");
             }
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
