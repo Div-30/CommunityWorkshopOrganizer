@@ -24,6 +24,8 @@ namespace CommunityWorkshopOrganizer.Services
                 return (UserResultStatus.Duplicate, "A user with this email address already exists.", null);
             }
 
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
+
             user.CreatedAt = DateTime.UtcNow;
             
             _context.Users.Add(user);
