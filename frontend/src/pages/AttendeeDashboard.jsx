@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { PageWrapper } from '../components/layout/PageWrapper';
@@ -18,9 +19,10 @@ const FILTER_TAGS = ['All', ...WORKSHOP_TAGS.slice(0, 8)];
 export function AttendeeDashboard() {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTag, setActiveTag] = useState('All');
-  
+
   const [workshops, setWorkshops] = useState([]);
   const [rsvpIds, setRsvpIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
@@ -33,10 +35,7 @@ export function AttendeeDashboard() {
           registrationAPI.getMyRegistrations()
         ]);
         setWorkshops(wsData || []);
-        
-        // Map backend workshop IDs that the user is registered for
-        const ids = new Set((regData || []).map(r => r.workshopId));
-        setRsvpIds(ids);
+        setRsvpIds(new Set((regData || []).map(r => r.workshopId)));
       } catch (err) {
         showError('Failed to load workshops. Please try again.');
       } finally {
@@ -51,36 +50,35 @@ export function AttendeeDashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const approvedWorkshops = workshops.filter(w => w.status === 'Approved');
+  const filteredWorkshops = workshops
+    .filter(w => w.status === 'Approved')
+    .filter((w) => {
+      const matchesSearch =
+        w.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        w.speakerName?.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    });
 
-  const filteredWorkshops = approvedWorkshops.filter((w) => {
-    const matchesSearch =
-      w.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      w.speakerName?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch; // Tags removed in backend, could be added later
-  });
-
-  const handleRsvp = async (workshopId) => {
+  const handleRsvp = async (workshopId, e) => {
+    e.stopPropagation();
     try {
       await registrationAPI.register(workshopId);
       setRsvpIds(prev => new Set([...prev, workshopId]));
-      success('Spot saved! See you there 🎉');
-      
-      // Update local capacity view optimistically
-      setWorkshops(ws => ws.map(w => 
-        w.workshopId === workshopId 
-        ? { ...w, registrations: [...(w.registrations || []), {}] } 
-        : w
+      success('Spot saved! See you there');
+      setWorkshops(ws => ws.map(w =>
+        w.workshopId === workshopId
+          ? { ...w, registrations: [...(w.registrations || []), {}] }
+          : w
       ));
     } catch (err) {
-      showError(err.message || 'Failed to RSVP. You might be already registered, or the session is full.');
+      showError(err.message || 'Failed to RSVP. You might already be registered or the session is full.');
     }
   };
 
   return (
     <PageWrapper
       role="attendee"
-      title={`${greeting}, ${firstName} 👋`}
+      title={`${greeting}, ${firstName}`}
       subtitle="Ready to learn something new today?"
     >
       {/* Search + Filter */}
@@ -90,8 +88,6 @@ export function AttendeeDashboard() {
           onChange={setSearchTerm}
           placeholder="Search workshops, speakers..."
         />
-
-        {/* Tag filter pills - Frontend only for now */}
         <div className="flex gap-2 flex-wrap">
           {FILTER_TAGS.map((tag) => (
             <button
@@ -113,9 +109,9 @@ export function AttendeeDashboard() {
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-           <SkeletonLoader className="h-64 rounded-2xl" />
-           <SkeletonLoader className="h-64 rounded-2xl" />
-           <SkeletonLoader className="h-64 rounded-2xl" />
+          <SkeletonLoader className="h-64 rounded-2xl" />
+          <SkeletonLoader className="h-64 rounded-2xl" />
+          <SkeletonLoader className="h-64 rounded-2xl" />
         </div>
       ) : filteredWorkshops.length === 0 ? (
         <EmptyState
@@ -131,14 +127,17 @@ export function AttendeeDashboard() {
             const isRsvpd = rsvpIds.has(workshop.workshopId);
 
             return (
-              <Card key={workshop.workshopId} hover className={isFull && !isRsvpd ? 'opacity-70' : ''}>
-                {/* Tags */}
+              <Card
+                key={workshop.workshopId}
+                hover
+                className={`cursor-pointer ${isFull && !isRsvpd ? 'opacity-70' : ''}`}
+                onClick={() => navigate(`/workshops/${workshop.workshopId}`)}
+              >
                 <div className="flex items-center gap-2 mb-3">
                   <Badge variant="info">Workshop</Badge>
                   {isFull && <Badge variant="soldout">Sold out</Badge>}
                 </div>
 
-                {/* Title + Description */}
                 <h3 className="text-[16px] font-semibold text-slate-900 leading-snug mb-1.5">
                   {workshop.title}
                 </h3>
@@ -146,7 +145,6 @@ export function AttendeeDashboard() {
                   {workshop.description}
                 </p>
 
-                {/* Metadata */}
                 <div className="space-y-1.5 mb-4">
                   <div className="flex items-center gap-2 text-[13px] text-slate-500">
                     <User size={14} className="text-indigo-600" />
@@ -166,24 +164,18 @@ export function AttendeeDashboard() {
                   </div>
                 </div>
 
-                {/* Capacity */}
-                <CapacityBar
-                  current={currentAttendees}
-                  capacity={workshop.capacity}
-                  className="mb-4"
-                />
+                <CapacityBar current={currentAttendees} capacity={workshop.capacity} className="mb-4" />
 
-                {/* Action */}
                 {isRsvpd ? (
                   <Button variant="secondary" className="w-full" disabled>
-                    ✓ You're going!
+                    You are going!
                   </Button>
                 ) : isFull ? (
-                  <Button variant="ghost" className="w-full">
+                  <Button variant="ghost" className="w-full" onClick={(e) => e.stopPropagation()}>
                     Join Waitlist
                   </Button>
                 ) : (
-                  <Button className="w-full bg-emerald-500 hover:bg-emerald-600" onClick={() => handleRsvp(workshop.workshopId)}>
+                  <Button className="w-full bg-emerald-500 hover:bg-emerald-600" onClick={(e) => handleRsvp(workshop.workshopId, e)}>
                     Count me in!
                   </Button>
                 )}
