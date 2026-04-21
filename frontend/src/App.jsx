@@ -16,6 +16,7 @@ import { AttendeeDashboard } from './pages/AttendeeDashboard';
 import { MySchedulePage } from './pages/MySchedulePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { OrganizerRequestPage } from './pages/OrganizerRequestPage';
+import { PaymentsPage } from './pages/PaymentsPage';
 
 /* Organizer */
 import { OrganizerDashboard } from './pages/OrganizerDashboard';
@@ -45,6 +46,7 @@ function App() {
             <Route path="/my-schedule" element={<ProtectedRoute><MySchedulePage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/organizer-request" element={<ProtectedRoute><OrganizerRequestPage /></ProtectedRoute>} />
+            <Route path="/payments/:id" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
 
             {/* Organizer */}
             <Route path="/organizer" element={<ProtectedRoute><OrganizerDashboard /></ProtectedRoute>} />
