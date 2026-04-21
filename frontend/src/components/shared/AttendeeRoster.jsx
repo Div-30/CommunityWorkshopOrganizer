@@ -5,10 +5,10 @@ import { Badge } from '../ui/Badge';
 import { CapacityBar } from '../ui/CapacityBar';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Users, Mail, Calendar, Download, MessageSquare, Trash2 } from 'lucide-react';
-import { MOCK_ATTENDEES } from '../../utils/mockData';
+
 
 export function AttendeeRoster({ workshopId, workshopTitle, capacity = 30 }) {
-  const [attendees] = useState(MOCK_ATTENDEES);
+  const [attendees] = useState([]);
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, attendee: null });
 
   const handleExportCSV = () => {

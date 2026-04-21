@@ -1,7 +1,10 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5272/api';
 
 const apiFetch = async (endpoint, options = {}) => {
-  const token = localStorage.getItem('token');
+  const rawToken = localStorage.getItem('token');
+  // Sanitize: reject string "null"/"undefined" left by previous failed attempts
+  const token = (rawToken && rawToken !== 'null' && rawToken !== 'undefined') ? rawToken : null;
+  if (rawToken && !token) localStorage.removeItem('token'); // clean up the bad value
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -12,9 +15,12 @@ const apiFetch = async (endpoint, options = {}) => {
     headers,
   });
   if (response.status === 401) {
+    const authHeaderDetail = response.headers.get('WWW-Authenticate');
+    console.error('SERVER REJECTED JWT TOKEN! WWW-Authenticate:', authHeaderDetail);
+    console.error('Sent token was:', token);
     localStorage.removeItem('token');
-    window.location.href = '/login';
-    return;
+    // We throw an explicit error rather than hard-reloading so React catches it.
+    throw new Error('UNAUTHORIZED_401: ' + (authHeaderDetail || 'No details provided by server'));
   }
   if (!response.ok) {
     const error = await response.text();
@@ -30,49 +36,58 @@ const apiFetch = async (endpoint, options = {}) => {
 
 export const authAPI = {
   login: (email, password) =>
-    apiFetch('/users/login', {
+    apiFetch('/Auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
-  register: (email, password, fullName, role) =>
-    apiFetch('/users/register', {
+  register: (email, password, fullName, userRole) =>
+    apiFetch('/User', {
       method: 'POST',
-      body: JSON.stringify({ email, password, fullName, role }),
+      body: JSON.stringify({ email, password, fullName, userRole }),
     }),
-  getCurrentUser: () => apiFetch('/users/me'),
+  getCurrentUser: () => apiFetch('/User/profile'),
 };
 
 export const workshopAPI = {
-  getAll: () => apiFetch('/workshops'),
-  getById: (id) => apiFetch(`/workshops/${id}`),
+  getAll: () => apiFetch('/Workshop'),
+  getMyWorkshops: () => apiFetch('/Workshop/my'),
+  getById: (id) => apiFetch(`/Workshop/${id}`),
   create: (data) =>
-    apiFetch('/workshops', {
+    apiFetch('/Workshop', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
   update: (id, data) =>
-    apiFetch(`/workshops/${id}`, {
+    apiFetch(`/Workshop/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
   delete: (id) =>
-    apiFetch(`/workshops/${id}`, {
+    apiFetch(`/Workshop/${id}`, {
       method: 'DELETE',
     }),
 };
 
 export const registrationAPI = {
   register: (workshopId) =>
-    apiFetch('/registrations', {
+    apiFetch('/Registration', {
       method: 'POST',
-      body: JSON.stringify({ workshopId }),
+      body: JSON.stringify(workshopId),
     }),
-  getMyRegistrations: () => apiFetch('/registrations/my'),
+  getMyRegistrations: () => apiFetch('/Registration/my'),
   cancel: (id) =>
-    apiFetch(`/registrations/${id}`, {
+    apiFetch(`/Registration/${id}`, {
       method: 'DELETE',
     }),
-  getWorkshopAttendees: (workshopId) => apiFetch(`/registrations/workshop/${workshopId}`),
+  getWorkshopAttendees: (workshopId) => apiFetch(`/Registration/workshop/${workshopId}`),
+};
+
+export const organizerRequestAPI = {
+  submitRequest: (message) =>
+    apiFetch('/OrganizerRequest', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    })
 };
 
 export default apiFetch;

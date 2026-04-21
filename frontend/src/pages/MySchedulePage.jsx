@@ -1,26 +1,56 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { Card } from '../components/ui/Card';
 import { Tabs } from '../components/ui/Tabs';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/shared/EmptyState';
+import { SkeletonLoader } from '../components/ui/SkeletonLoader';
 import { Calendar, Clock, MapPin, FileText, X, BookOpen } from 'lucide-react';
-import { MOCK_WORKSHOPS, MOCK_REGISTRATIONS } from '../utils/mockData';
+import { registrationAPI } from '../services/api';
 
 export function MySchedulePage() {
   const { user } = useAuth();
+  const { error: showError, success } = useToast();
   const [activeTab, setActiveTab] = useState('upcoming');
+  
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const registeredWorkshops = MOCK_REGISTRATIONS.map((reg) => {
-    const workshop = MOCK_WORKSHOPS.find((w) => w.id === reg.workshopId);
-    return { ...workshop, registrationId: reg.id, registeredAt: reg.registeredAt };
-  }).filter(Boolean);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await registrationAPI.getMyRegistrations();
+        setRegistrations(data || []);
+      } catch (err) {
+        showError('Failed to load your schedule.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCancel = async (id) => {
+    try {
+      await registrationAPI.cancel(id);
+      success('Registration cancelled.');
+      setRegistrations(prev => prev.filter(r => r.registrationId !== id));
+    } catch (err) {
+      showError(err.message || 'Failed to cancel registration.');
+    }
+  };
+
+  const registeredWorkshops = registrations.map((reg) => {
+    return { ...reg.workshop, registrationId: reg.registrationId, registeredAt: reg.registeredAt };
+  }).filter(w => w.workshopId); // Ensure workshop exists
 
   const now = new Date();
-  const upcoming = registeredWorkshops.filter((w) => new Date(w.date) >= now);
-  const past = registeredWorkshops.filter((w) => new Date(w.date) < now);
+  const upcoming = registeredWorkshops.filter((w) => new Date(w.eventDate) >= now);
+  const past = registeredWorkshops.filter((w) => new Date(w.eventDate) < now);
 
   const tabs = [
     { id: 'upcoming', label: 'Upcoming', icon: Calendar, count: upcoming.length },
@@ -32,7 +62,7 @@ export function MySchedulePage() {
   // Group by date
   const grouped = {};
   workshops.forEach((w) => {
-    const dateKey = new Date(w.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const dateKey = new Date(w.eventDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     if (!grouped[dateKey]) grouped[dateKey] = [];
     grouped[dateKey].push(w);
   });
@@ -45,7 +75,12 @@ export function MySchedulePage() {
     >
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-6" />
 
-      {workshops.length === 0 ? (
+      {loading ? (
+        <div className="space-y-6">
+           <SkeletonLoader className="h-24 w-full" />
+           <SkeletonLoader className="h-24 w-full" />
+        </div>
+      ) : workshops.length === 0 ? (
         <EmptyState
           icon={Calendar}
           title={activeTab === 'upcoming' ? 'Nothing scheduled yet' : 'No past workshops'}
@@ -59,9 +94,9 @@ export function MySchedulePage() {
         />
       ) : (
         <div className="space-y-6">
-          {Object.entries(grouped).map(([date, items]) => (
+           {Object.entries(grouped).map(([date, items]) => (
             <div key={date}>
-              <h3 className="text-[13px] font-medium uppercase tracking-wider text-[var(--color-ink-tertiary)] mb-3 px-1">
+              <h3 className="text-[13px] font-medium uppercase tracking-wider text-slate-500 mb-3 px-1">
                 {date}
               </h3>
               <div className="space-y-3">
@@ -69,34 +104,32 @@ export function MySchedulePage() {
                   <Card key={workshop.registrationId}>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                       {/* Time badge */}
-                      <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-[var(--color-primary-light)]">
-                        <span className="text-[16px] font-bold text-[var(--color-primary)]">
-                          {new Date(workshop.date).getDate()}
+                      <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-indigo-50">
+                        <span className="text-[16px] font-bold text-indigo-600">
+                          {new Date(workshop.eventDate).getDate()}
                         </span>
-                        <span className="text-[11px] font-medium text-[var(--color-primary)] uppercase">
-                          {new Date(workshop.date).toLocaleDateString('en-US', { month: 'short' })}
+                        <span className="text-[11px] font-medium text-indigo-600 uppercase">
+                          {new Date(workshop.eventDate).toLocaleDateString('en-US', { month: 'short' })}
                         </span>
                       </div>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-[15px] font-semibold text-[var(--color-ink)]">
+                        <h4 className="text-[15px] font-semibold text-slate-900">
                           {workshop.title}
                         </h4>
                         <div className="flex flex-wrap items-center gap-3 mt-1.5">
-                          <span className="flex items-center gap-1.5 text-[13px] text-[var(--color-ink-secondary)]">
+                          <span className="flex items-center gap-1.5 text-[13px] text-slate-500">
                             <Clock size={13} />
-                            {new Date(workshop.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            {new Date(workshop.eventDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                           </span>
-                          <span className="flex items-center gap-1.5 text-[13px] text-[var(--color-ink-secondary)]">
+                          <span className="flex items-center gap-1.5 text-[13px] text-slate-500">
                             <MapPin size={13} />
-                            {workshop.location}
+                            TBA Campus
                           </span>
                         </div>
                         <div className="flex gap-1.5 mt-2">
-                          {workshop.tags?.slice(0, 2).map((tag) => (
-                            <Badge key={tag} variant="info">{tag}</Badge>
-                          ))}
+                            <Badge variant="info">Workshop</Badge>
                         </div>
                       </div>
 
@@ -108,7 +141,7 @@ export function MySchedulePage() {
                               <FileText size={14} />
                               Resources
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]">
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50" onClick={() => handleCancel(workshop.registrationId)}>
                               <X size={14} />
                               Cancel
                             </Button>

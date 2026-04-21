@@ -4,11 +4,11 @@ import { Badge } from '../components/ui/Badge';
 import { StatCard } from '../components/ui/StatCard';
 import { AttendeeRoster } from '../components/shared/AttendeeRoster';
 import { Users, UserCheck, TrendingUp } from 'lucide-react';
-import { MOCK_WORKSHOPS } from '../utils/mockData';
+
 
 export function AttendeeManagementPage() {
   const { id } = useParams();
-  const workshop = MOCK_WORKSHOPS.find(w => w.id === Number(id)) || MOCK_WORKSHOPS[0];
+  const workshop = [].find(w => w.id === Number(id)) || [][0];
   const fillRate = Math.round((workshop.currentAttendees / workshop.capacity) * 100);
 
   return (

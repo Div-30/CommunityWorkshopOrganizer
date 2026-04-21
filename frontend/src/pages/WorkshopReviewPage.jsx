@@ -10,12 +10,12 @@ import { useToast } from '../context/ToastContext';
 import {
   Check, X, ChevronDown, ChevronUp, Calendar, Users, MapPin, User, ClipboardCheck,
 } from 'lucide-react';
-import { MOCK_WORKSHOPS } from '../utils/mockData';
+
 
 export function WorkshopReviewPage() {
   const { success } = useToast();
   const [workshops, setWorkshops] = useState(
-    MOCK_WORKSHOPS.filter(w => w.status === 'Pending')
+    [].filter(w => w.status === 'Pending')
   );
   const [expandedId, setExpandedId] = useState(null);
   const [rejectModal, setRejectModal] = useState({ isOpen: false, id: null });

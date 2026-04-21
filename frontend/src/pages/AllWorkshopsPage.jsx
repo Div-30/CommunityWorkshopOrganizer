@@ -7,7 +7,7 @@ import { SearchBar } from '../components/ui/SearchBar';
 import { DataTable } from '../components/ui/DataTable';
 import { CapacityBar } from '../components/ui/CapacityBar';
 import { BookOpen, Filter } from 'lucide-react';
-import { MOCK_WORKSHOPS } from '../utils/mockData';
+
 
 const STATUS_MAP = {
   Approved: 'approved',
@@ -26,13 +26,13 @@ export function AllWorkshopsPage() {
   const [search, setSearch] = useState('');
 
   const tabs = [
-    { id: 'all', label: 'All', icon: BookOpen, count: MOCK_WORKSHOPS.length },
-    { id: 'pending', label: 'Pending', count: MOCK_WORKSHOPS.filter(w => w.status === 'Pending').length },
-    { id: 'approved', label: 'Approved', count: MOCK_WORKSHOPS.filter(w => w.status === 'Approved').length },
-    { id: 'rejected', label: 'Rejected', count: MOCK_WORKSHOPS.filter(w => w.status === 'Rejected').length },
+    { id: 'all', label: 'All', icon: BookOpen, count: [].length },
+    { id: 'pending', label: 'Pending', count: [].filter(w => w.status === 'Pending').length },
+    { id: 'approved', label: 'Approved', count: [].filter(w => w.status === 'Approved').length },
+    { id: 'rejected', label: 'Rejected', count: [].filter(w => w.status === 'Rejected').length },
   ];
 
-  const filtered = MOCK_WORKSHOPS.filter((w) => {
+  const filtered = [].filter((w) => {
     const matchesTab = activeTab === 'all' || w.status.toLowerCase() === activeTab;
     const matchesSearch =
       w.title.toLowerCase().includes(search.toLowerCase()) ||

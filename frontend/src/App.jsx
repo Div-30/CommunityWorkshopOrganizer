@@ -15,6 +15,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { AttendeeDashboard } from './pages/AttendeeDashboard';
 import { MySchedulePage } from './pages/MySchedulePage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { OrganizerRequestPage } from './pages/OrganizerRequestPage';
 
 /* Organizer */
 import { OrganizerDashboard } from './pages/OrganizerDashboard';
@@ -30,7 +31,7 @@ import { UserManagementPage } from './pages/UserManagementPage';
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <ToastProvider>
           <Toast />
@@ -43,6 +44,7 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute><AttendeeDashboard /></ProtectedRoute>} />
             <Route path="/my-schedule" element={<ProtectedRoute><MySchedulePage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/organizer-request" element={<ProtectedRoute><OrganizerRequestPage /></ProtectedRoute>} />
 
             {/* Organizer */}
             <Route path="/organizer" element={<ProtectedRoute><OrganizerDashboard /></ProtectedRoute>} />

@@ -13,7 +13,7 @@ export function LoginPage() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const { success } = useToast();
+  const { success, error: showError } = useToast();
   const navigate = useNavigate();
 
   const roles = [
@@ -42,10 +42,18 @@ export function LoginPage() {
       const user = await login(email, password, selectedRole);
       success('Welcome back! 👋');
       const role = user.role?.toLowerCase();
-      navigate(role === 'manager' ? '/manager' : role === 'organizer' ? '/organizer' : '/dashboard');
-    } catch {
-      success('Welcome back! 👋');
-      navigate(selectedRole === 'Manager' ? '/manager' : selectedRole === 'Organizer' ? '/organizer' : '/dashboard');
+      
+      if (role === 'manager' || role === 'admin') {
+         navigate('/manager');
+      } else if (role === 'organizer') {
+         navigate('/organizer');
+      } else {
+         navigate('/dashboard');
+      }
+    } catch (err) {
+      // Show the error toast and update the input error state
+      showError(err.message || 'Login failed. Please check your credentials or if the server is running.');
+      setErrors({ email: 'Invalid credentials or server unreachable.' });
     } finally {
       setLoading(false);
     }

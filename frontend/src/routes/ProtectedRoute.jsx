@@ -3,10 +3,6 @@ import { useAuth } from '../hooks/useAuth';
 import { SkeletonLoader } from '../components/ui/SkeletonLoader';
 
 export function ProtectedRoute({ children, allowedRoles }) {
-  // DEVELOPMENT MODE: Bypass authentication
-  return children;
-
-  /* PRODUCTION CODE - Uncomment to enable authentication
   const { user, loading, role } = useAuth();
   const location = useLocation();
 
@@ -36,5 +32,4 @@ export function ProtectedRoute({ children, allowedRoles }) {
   }
 
   return children;
-  */
 }

@@ -8,7 +8,7 @@ import { DataTable } from '../components/ui/DataTable';
 import { Button } from '../components/ui/Button';
 import { useToast } from '../context/ToastContext';
 import { Users, Shield, ShieldOff } from 'lucide-react';
-import { MOCK_USERS } from '../utils/mockData';
+
 
 const ROLE_VARIANT = {
   Attendee: 'info',
@@ -18,7 +18,7 @@ const ROLE_VARIANT = {
 
 export function UserManagementPage() {
   const { success } = useToast();
-  const [users, setUsers] = useState(MOCK_USERS);
+  const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
 

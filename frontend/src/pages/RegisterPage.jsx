@@ -44,10 +44,26 @@ export function RegisterPage() {
     setErrors({});
 
     try {
-      await register(formData);
-      success("You're all set! 🎉");
-      const role = formData.role.toLowerCase();
-      navigate(role === 'manager' ? '/manager' : role === 'organizer' ? '/organizer' : '/dashboard');
+      // Force Attendee role for backend database compliance
+      const result = await register({ ...formData, role: 'Attendee' });
+      
+      const requestedRole = formData.role.toLowerCase();
+
+      if (result.loggedIn) {
+        // Auto-login worked — navigate straight to the right dashboard
+        if (requestedRole === 'organizer') {
+          success("Account created! Let's get your Organizer application started.");
+          navigate('/organizer-request');
+        } else {
+          success("You're all set! 🎉");
+          navigate('/dashboard');
+        }
+      } else {
+        // Account was created but auto-login failed (backend needs restart) —
+        // send to login page with a helpful message
+        success('Account created successfully! Please sign in to continue.');
+        navigate('/login');
+      }
     } catch (err) {
       showError(err.message || 'Hmm, something went wrong. Try again?');
     } finally {

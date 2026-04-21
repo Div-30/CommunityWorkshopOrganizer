@@ -1,6 +1,37 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { authAPI } from '../services/api';
 
+// Decode a JWT token client-side (no library needed — JWT is just base64 JSON)
+// JwtSecurityTokenHandler uses SHORT claim names by default:
+//   ClaimTypes.NameIdentifier → "nameid"
+//   ClaimTypes.Name           → "unique_name"
+//   ClaimTypes.Email          → "email"
+//   ClaimTypes.Role           → "role"
+const decodeToken = (token) => {
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    const role = decoded['role']
+      || decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    const fullName = decoded['unique_name']
+      || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name']
+      || decoded['name']
+      || decoded['email']
+      || '';
+    return {
+      userId: decoded['nameid'] || decoded['sub']
+        || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'],
+      email: decoded['email']
+        || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'],
+      role,
+      userRole: role,
+      fullName,
+    };
+  } catch {
+    return null;
+  }
+};
+
 export const AuthContext = createContext(null);
 
 const normalizeRole = (role) => String(role || '').toLowerCase();
@@ -13,19 +44,7 @@ export function AuthProvider({ children }) {
     let isMounted = true;
 
     const restoreSession = async () => {
-      // DEVELOPMENT MODE: Use mock user
-      if (isMounted) {
-        setUser({
-          userId: 1,
-          fullName: 'Demo User',
-          email: 'demo@example.com',
-          role: 'Organizer' // Change to 'Attendee' to test attendee view
-        });
-        setLoading(false);
-      }
-      return;
-
-      /* PRODUCTION CODE - Uncomment to enable real authentication
+      // PRODUCTION CODE
       const token = localStorage.getItem('token');
 
       if (!token) {
@@ -35,10 +54,19 @@ export function AuthProvider({ children }) {
         return;
       }
 
+      // Sanitize: a previous failed attempt may have stored the string "null" or "undefined"
+      if (!token || token === 'null' || token === 'undefined') {
+        localStorage.removeItem('token');
+        if (isMounted) setLoading(false);
+        return;
+      }
+
       try {
-        const currentUser = await authAPI.getCurrentUser();
+        // Decode token client-side — no extra API call needed
+        const decoded = decodeToken(token);
+        if (!decoded) throw new Error('Malformed token');
         if (isMounted) {
-          setUser(currentUser);
+          setUser(decoded);
         }
       } catch {
         localStorage.removeItem('token');
@@ -50,7 +78,6 @@ export function AuthProvider({ children }) {
           setLoading(false);
         }
       }
-      */
     };
 
     restoreSession();
@@ -60,45 +87,37 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const login = async (email, password, role = 'Attendee') => {
-    // DEVELOPMENT MODE: Allow login or use mock user
-    try {
-      const response = await authAPI.login(email, password);
-      localStorage.setItem('token', response.token);
-      setUser(response.user);
-      return response.user;
-    } catch (error) {
-      // If login fails, you can still use mock user with selected role
-      console.log('Login failed, using mock user with role:', role);
-      const mockUser = {
-        userId: 1,
-        fullName: email ? email.split('@')[0] : 'Demo User',
-        email: email || 'demo@example.com',
-        role: role
-      };
-      setUser(mockUser);
-      return mockUser;
+  const login = async (email, password) => {
+    const response = await authAPI.login(email, password);
+    const tokenStr = response.token || response.Token;
+    
+    if (!tokenStr || tokenStr === 'undefined') {
+       console.error("CRITICAL: Login response did not contain a valid token!", response);
+       throw new Error("Server failed to return an authorization token.");
     }
+
+    localStorage.setItem('token', tokenStr);
+    
+    // Decode the token client-side — no extra API call to /profile needed
+    const currentUser = decodeToken(tokenStr);
+    if (!currentUser) throw new Error('Received an invalid token from the server.');
+    
+    setUser(currentUser);
+    return currentUser;
   };
 
   const register = async ({ email, password, fullName, role }) => {
-    // DEVELOPMENT MODE: Allow registration or use mock user
+    // 1. Create the user (throws on duplicate email or validation error)
+    await authAPI.register(email, password, fullName, role);
+    
+    // 2. Try auto-login — if this fails (e.g. backend config issue),
+    //    we still know the account was created, so return a partial result.
     try {
-      const response = await authAPI.register(email, password, fullName, role);
-      localStorage.setItem('token', response.token);
-      setUser(response.user);
-      return response.user;
-    } catch (error) {
-      // If registration fails, you can still use mock user
-      console.log('Registration failed, using mock user');
-      const mockUser = {
-        userId: 1,
-        fullName: fullName,
-        email: email,
-        role: role
-      };
-      setUser(mockUser);
-      return mockUser;
+      const loggedInUser = await login(email, password);
+      return { created: true, loggedIn: true, user: loggedInUser };
+    } catch (autoLoginErr) {
+      console.warn('Account created but auto-login failed:', autoLoginErr.message);
+      return { created: true, loggedIn: false, user: null };
     }
   };
 

@@ -8,14 +8,14 @@ import { CapacityBar } from '../components/ui/CapacityBar';
 import { AttendeeRoster } from '../components/shared/AttendeeRoster';
 import { ResourceManager } from '../components/shared/ResourceManager';
 import { Calendar, Clock, MapPin, User, ArrowLeft } from 'lucide-react';
-import { MOCK_WORKSHOPS } from '../utils/mockData';
+
 
 export function WorkshopDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const workshop = MOCK_WORKSHOPS.find(w => w.id === Number(id)) || MOCK_WORKSHOPS[0];
+  const workshop = [].find(w => w.id === Number(id)) || [][0];
   const isOrganizer = user?.role?.toLowerCase() === 'organizer' || user?.role?.toLowerCase() === 'manager';
   const role = user?.role?.toLowerCase() || 'attendee';
 

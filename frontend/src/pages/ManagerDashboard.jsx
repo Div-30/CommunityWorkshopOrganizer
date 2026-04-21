@@ -8,7 +8,7 @@ import {
   Users, BookOpen, ClipboardCheck, CheckCircle, XCircle,
   Clock, ArrowRight,
 } from 'lucide-react';
-import { MOCK_WORKSHOPS, MOCK_USERS, MOCK_ACTIVITY } from '../utils/mockData';
+
 import { useNavigate } from 'react-router-dom';
 
 export function ManagerDashboard() {
@@ -19,9 +19,9 @@ export function ManagerDashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const pending = MOCK_WORKSHOPS.filter(w => w.status === 'Pending');
-  const approved = MOCK_WORKSHOPS.filter(w => w.status === 'Approved');
-  const rejected = MOCK_WORKSHOPS.filter(w => w.status === 'Rejected');
+  const pending = [].filter(w => w.status === 'Pending');
+  const approved = [].filter(w => w.status === 'Approved');
+  const rejected = [].filter(w => w.status === 'Rejected');
 
   return (
     <PageWrapper
@@ -31,8 +31,8 @@ export function ManagerDashboard() {
     >
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <StatCard icon={Users} label="Total Users" value={MOCK_USERS.length} />
-        <StatCard icon={BookOpen} label="Total Workshops" value={MOCK_WORKSHOPS.length} />
+        <StatCard icon={Users} label="Total Users" value={[].length} />
+        <StatCard icon={BookOpen} label="Total Workshops" value={[].length} />
         <StatCard icon={ClipboardCheck} label="Pending Review" value={pending.length} trend={pending.length > 0 ? 'Needs attention' : undefined} />
         <StatCard icon={CheckCircle} label="Approved" value={approved.length} />
         <StatCard icon={XCircle} label="Rejected" value={rejected.length} />
@@ -79,7 +79,7 @@ export function ManagerDashboard() {
         <Card>
           <h2 className="text-[16px] font-semibold text-[var(--color-ink)] mb-4">Recent Activity</h2>
           <div className="space-y-1">
-            {MOCK_ACTIVITY.map((activity) => (
+            {[].map((activity) => (
               <div key={activity.id} className="flex items-start gap-3 rounded-xl px-3 py-3 hover:bg-[var(--color-surface-hover)] transition-colors">
                 <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]" />
                 <div className="min-w-0">

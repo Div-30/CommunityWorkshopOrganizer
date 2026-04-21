@@ -37,7 +37,7 @@ export function ToastProvider({ children }) {
       warning: (message, title = 'Worth a quick look') =>
         addToast({ title, message, type: 'warning' }),
     }),
-    [addToast, removeToast, toasts]
+    [toasts, addToast, removeToast]
   );
 
   return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
