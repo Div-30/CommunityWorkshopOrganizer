@@ -1,9 +1,9 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { NAV_LINKS, APP_NAME } from '../../utils/constants';
 import {
   Compass, CalendarDays, Bell, LayoutDashboard, PlusCircle,
-  ClipboardCheck, BookOpen, Users, LogOut, ChevronLeft, Zap,
+  ClipboardCheck, BookOpen, Users, LogOut, ChevronLeft, Zap, UserCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '../ui/Badge';
@@ -103,14 +103,21 @@ export function Sidebar({ role = 'attendee' }) {
       {/* User section */}
       <div className={`border-t border-[var(--color-border)] px-3 py-3 ${collapsed ? 'px-2' : ''}`}>
         <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] font-semibold text-[13px]">
+          {/* Avatar — click to go to profile */}
+          <Link
+            to="/profile"
+            title="Edit profile"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] font-semibold text-[13px] hover:ring-2 hover:ring-[var(--color-primary)] transition-all"
+          >
             {user?.fullName?.charAt(0) || 'U'}
-          </div>
+          </Link>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium text-[var(--color-ink)] truncate">
-                {user?.fullName || 'User'}
-              </p>
+              <Link to="/profile" className="block hover:underline underline-offset-2">
+                <p className="text-[13px] font-medium text-[var(--color-ink)] truncate">
+                  {user?.fullName || 'User'}
+                </p>
+              </Link>
               <Badge variant={role === 'manager' ? 'warning' : role === 'organizer' ? 'info' : 'default'} className="mt-0.5">
                 {user?.role || 'Attendee'}
               </Badge>

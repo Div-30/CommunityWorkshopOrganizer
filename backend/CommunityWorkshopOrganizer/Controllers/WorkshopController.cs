@@ -11,13 +11,17 @@ namespace CommunityWorkshopOrganizer.Controllers
     public class WorkshopController : ControllerBase
     {
         private readonly IWorkshopService _workshopService;
+        private readonly IUserService _userService;
+        private readonly IEmailService _emailService;
 
-        public WorkshopController(IWorkshopService workshopService)
+        public WorkshopController(IWorkshopService workshopService, IUserService userService, IEmailService emailService)
         {
             _workshopService = workshopService;
+            _userService = userService;
+            _emailService = emailService;
         }
 
-        // GET /api/workshop — public: attendees discover workshops (filter by status optional)
+        // GET /api/workshop — public
         [HttpGet]
         public ActionResult<IEnumerable<Workshop>> GetAllWorkshops([FromQuery] string? status)
         {
@@ -25,7 +29,7 @@ namespace CommunityWorkshopOrganizer.Controllers
             return Ok(result.Data);
         }
 
-        // GET /api/workshop/my — Organizer only: get their own created workshops
+        // GET /api/workshop/my — Organizer only
         [HttpGet("my")]
         [Authorize(Roles = "Organizer")]
         public ActionResult<IEnumerable<Workshop>> GetMyWorkshops()
@@ -40,14 +44,12 @@ namespace CommunityWorkshopOrganizer.Controllers
         public ActionResult<Workshop> GetWorkshopById(int id)
         {
             var result = _workshopService.GetWorkshopById(id);
-
             if (result.Status == WorkshopResultStatus.NotFound)
                 return NotFound(result.Message);
-
             return Ok(result.Data);
         }
 
-        // POST /api/workshop — Organizer only; OrganizerId auto-set from token
+        // POST /api/workshop — Organizer only
         [HttpPost]
         [Authorize(Roles = "Organizer")]
         public ActionResult<Workshop> CreateWorkshop([FromBody] Workshop workshop)
@@ -57,14 +59,13 @@ namespace CommunityWorkshopOrganizer.Controllers
 
             if (result.Status == WorkshopResultStatus.ValidationError)
                 return BadRequest(result.Message);
-
             if (result.Status == WorkshopResultStatus.NotFound)
                 return NotFound(result.Message);
 
             return CreatedAtAction(nameof(GetWorkshopById), new { id = result.Data!.WorkshopId }, result.Data);
         }
 
-        // PUT /api/workshop/{id} — Organizer only; can only update their own workshop
+        // PUT /api/workshop/{id} — Organizer only
         [HttpPut("{id}")]
         [Authorize(Roles = "Organizer")]
         public ActionResult<Workshop> UpdateWorkshop(int id, [FromBody] Workshop updatedData)
@@ -74,14 +75,13 @@ namespace CommunityWorkshopOrganizer.Controllers
 
             if (result.Status == WorkshopResultStatus.NotFound)
                 return NotFound(result.Message);
-
             if (result.Status == WorkshopResultStatus.Forbidden)
                 return StatusCode(403, result.Message);
 
             return Ok(result.Data);
         }
 
-        // DELETE /api/workshop/{id} — Organizer only; can only delete their own workshop
+        // DELETE /api/workshop/{id} — Organizer only
         [HttpDelete("{id}")]
         [Authorize(Roles = "Organizer")]
         public IActionResult DeleteWorkshop(int id)
@@ -91,7 +91,6 @@ namespace CommunityWorkshopOrganizer.Controllers
 
             if (result.Status == WorkshopResultStatus.NotFound)
                 return NotFound(result.Message);
-
             if (result.Status == WorkshopResultStatus.Forbidden)
                 return StatusCode(403, result.Message);
 
@@ -107,9 +106,25 @@ namespace CommunityWorkshopOrganizer.Controllers
 
             if (result.Status == WorkshopResultStatus.NotFound)
                 return NotFound(result.Message);
-
             if (result.Status == WorkshopResultStatus.ValidationError)
                 return BadRequest(result.Message);
+
+            // Notify organizer by email
+            _ = Task.Run(async () =>
+            {
+                var workshop = _workshopService.GetWorkshopById(id).Data;
+                if (workshop?.OrganizerId != null)
+                {
+                    var organizer = _userService.GetUserById(workshop.OrganizerId.Value).Data;
+                    if (organizer != null)
+                    {
+                        await _emailService.SendAsync(
+                            organizer.Email, organizer.FullName,
+                            $"✅ Workshop Approved: {workshop.Title}",
+                            EmailTemplates.WorkshopApproved(organizer.FullName, workshop.Title));
+                    }
+                }
+            });
 
             return Ok(new { Message = result.Message });
         }
@@ -131,9 +146,25 @@ namespace CommunityWorkshopOrganizer.Controllers
 
             if (result.Status == WorkshopResultStatus.NotFound)
                 return NotFound(result.Message);
-
             if (result.Status == WorkshopResultStatus.ValidationError)
                 return BadRequest(result.Message);
+
+            // Notify organizer by email
+            _ = Task.Run(async () =>
+            {
+                var workshop = _workshopService.GetWorkshopById(id).Data;
+                if (workshop?.OrganizerId != null)
+                {
+                    var organizer = _userService.GetUserById(workshop.OrganizerId.Value).Data;
+                    if (organizer != null)
+                    {
+                        await _emailService.SendAsync(
+                            organizer.Email, organizer.FullName,
+                            $"Workshop Update: {workshop.Title}",
+                            EmailTemplates.WorkshopRejected(organizer.FullName, workshop.Title, request.Reason));
+                    }
+                }
+            });
 
             return Ok(new { Message = result.Message });
         }

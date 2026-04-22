@@ -1,3 +1,4 @@
+using CommunityWorkshopOrganizer.Models;
 using CommunityWorkshopOrganizer.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,35 +11,36 @@ namespace CommunityWorkshopOrganizer.Controllers
     public class OrganizerRequestController : ControllerBase
     {
         private readonly IOrganizerRequestService _requestService;
+        private readonly IUserService _userService;
+        private readonly IEmailService _emailService;
 
-        public OrganizerRequestController(IOrganizerRequestService requestService)
+        public OrganizerRequestController(
+            IOrganizerRequestService requestService,
+            IUserService userService,
+            IEmailService emailService)
         {
             _requestService = requestService;
+            _userService = userService;
+            _emailService = emailService;
         }
 
-        public class SubmitRequestPayload
-        {
-            public string Message { get; set; } = string.Empty;
-        }
-
-        // POST /api/organizer-request — Attendee submits an application to be an Organizer
+        // POST /api/organizerrequest — Attendee only
         [HttpPost]
         [Authorize(Roles = "Attendee")]
-        public IActionResult SubmitRequest([FromBody] SubmitRequestPayload payload)
+        public IActionResult SubmitRequest([FromBody] OrganizerRequest request)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var result = _requestService.SubmitRequest(userId, payload.Message);
+            var result = _requestService.SubmitRequest(userId, request.Message);
 
-            if (result.Status == OrganizerRequestResultStatus.NotFound)
-                return NotFound(result.Message);
-
-            if (result.Status == OrganizerRequestResultStatus.Duplicate || result.Status == OrganizerRequestResultStatus.ValidationError)
+            if (result.Status == OrganizerRequestResultStatus.Duplicate)
+                return BadRequest(result.Message);
+            if (result.Status == OrganizerRequestResultStatus.ValidationError)
                 return BadRequest(result.Message);
 
             return Ok(result.Data);
         }
 
-        // GET /api/organizer-request — Admin/Manager views all applications (filter by status optional)
+        // GET /api/organizerrequest — Admin/Manager only
         [HttpGet]
         [Authorize(Roles = "Admin,Manager")]
         public IActionResult GetAllRequests([FromQuery] string? status)
@@ -47,7 +49,7 @@ namespace CommunityWorkshopOrganizer.Controllers
             return Ok(result.Data);
         }
 
-        // PUT /api/organizer-request/{id}/approve — Admin/Manager approves application
+        // PUT /api/organizerrequest/{id}/approve — Admin/Manager only
         [HttpPut("{id}/approve")]
         [Authorize(Roles = "Admin,Manager")]
         public IActionResult ApproveRequest(int id)
@@ -56,30 +58,62 @@ namespace CommunityWorkshopOrganizer.Controllers
 
             if (result.Status == OrganizerRequestResultStatus.NotFound)
                 return NotFound(result.Message);
-
             if (result.Status == OrganizerRequestResultStatus.ValidationError)
                 return BadRequest(result.Message);
+
+            // Notify user by email
+            _ = Task.Run(async () =>
+            {
+                var req = _requestService.GetAllRequests(null).Data?.FirstOrDefault(r => r.RequestId == id);
+                if (req?.UserId != null)
+                {
+                    var user = _userService.GetUserById(req.UserId).Data;
+                    if (user != null)
+                    {
+                        await _emailService.SendAsync(
+                            user.Email, user.FullName,
+                            "🚀 You're Now an Organizer!",
+                            EmailTemplates.OrganizerRequestApproved(user.FullName));
+                    }
+                }
+            });
 
             return Ok(new { Message = result.Message });
         }
 
-        public class RejectRequestPayload
-        {
-            public string Reason { get; set; } = string.Empty;
-        }
+        public class RejectRequestBody { public string Reason { get; set; } = string.Empty; }
 
-        // PUT /api/organizer-request/{id}/reject — Admin/Manager rejects application
+        // PUT /api/organizerrequest/{id}/reject — Admin/Manager only
         [HttpPut("{id}/reject")]
         [Authorize(Roles = "Admin,Manager")]
-        public IActionResult RejectRequest(int id, [FromBody] RejectRequestPayload payload)
+        public IActionResult RejectRequest(int id, [FromBody] RejectRequestBody body)
         {
-            var result = _requestService.RejectRequest(id, payload.Reason);
+            if (string.IsNullOrWhiteSpace(body.Reason))
+                return BadRequest("A reason is required.");
+
+            var result = _requestService.RejectRequest(id, body.Reason);
 
             if (result.Status == OrganizerRequestResultStatus.NotFound)
                 return NotFound(result.Message);
-
             if (result.Status == OrganizerRequestResultStatus.ValidationError)
                 return BadRequest(result.Message);
+
+            // Notify user by email
+            _ = Task.Run(async () =>
+            {
+                var req = _requestService.GetAllRequests(null).Data?.FirstOrDefault(r => r.RequestId == id);
+                if (req?.UserId != null)
+                {
+                    var user = _userService.GetUserById(req.UserId).Data;
+                    if (user != null)
+                    {
+                        await _emailService.SendAsync(
+                            user.Email, user.FullName,
+                            "Organizer Application Update",
+                            EmailTemplates.OrganizerRequestRejected(user.FullName, body.Reason));
+                    }
+                }
+            });
 
             return Ok(new { Message = result.Message });
         }

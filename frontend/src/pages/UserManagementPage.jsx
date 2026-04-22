@@ -8,7 +8,8 @@ import { DataTable } from '../components/ui/DataTable';
 import { Button } from '../components/ui/Button';
 import { useToast } from '../context/ToastContext';
 import { userAPI } from '../services/api';
-import { Users, Shield, ShieldOff } from 'lucide-react';
+import { ConfirmDialog } from '../components/shared/ConfirmDialog';
+import { Users, Shield, ShieldOff, Trash2 } from 'lucide-react';
 
 
 const ROLE_VARIANT = {
@@ -22,6 +23,7 @@ export function UserManagementPage() {
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
 
   useEffect(() => {
     userAPI.getAll()
@@ -54,6 +56,17 @@ export function UserManagementPage() {
       }
       return u;
     }));
+  };
+
+  const handleDelete = async () => {
+    try {
+      await userAPI.deleteUser(deleteDialog.id);
+      setUsers(prev => prev.filter(u => u.userId !== deleteDialog.id));
+      setDeleteDialog({ isOpen: false, id: null });
+      success('User deleted successfully.');
+    } catch (err) {
+      showError(err.message || 'Failed to delete user.');
+    }
   };
 
   const columns = [
@@ -101,20 +114,30 @@ export function UserManagementPage() {
     {
       key: 'actions',
       label: '',
-      width: '100px',
+      width: '160px',
       render: (_, row) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => toggleStatus(row.userId)}
-          className={row._uiStatus === 'Suspended'
-            ? 'text-[var(--color-success)] hover:bg-[var(--color-success-light)]'
-            : 'text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]'
-          }
-        >
-          {row._uiStatus === 'Suspended' ? <Shield size={14} /> : <ShieldOff size={14} />}
-          {row._uiStatus === 'Suspended' ? 'Activate' : 'Suspend'}
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => toggleStatus(row.userId)}
+            className={row._uiStatus === 'Suspended'
+              ? 'text-[var(--color-success)] hover:bg-[var(--color-success-light)]'
+              : 'text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]'
+            }
+          >
+            {row._uiStatus === 'Suspended' ? <Shield size={14} /> : <ShieldOff size={14} />}
+            {row._uiStatus === 'Suspended' ? 'Activate' : 'Suspend'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]"
+            onClick={() => setDeleteDialog({ isOpen: true, id: row.userId })}
+          >
+            <Trash2 size={14} />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -143,6 +166,16 @@ export function UserManagementPage() {
           />
         </div>
       </Card>
+
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, id: null })}
+        onConfirm={handleDelete}
+        title="Delete this user?"
+        message="This will permanently delete the user and all their data. This cannot be undone."
+        confirmText="Yes, delete"
+        cancelText="Cancel"
+      />
     </PageWrapper>
   );
 }

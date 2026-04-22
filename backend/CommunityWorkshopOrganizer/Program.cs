@@ -20,6 +20,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IWorkshopService, WorkshopService>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
 builder.Services.AddScoped<IOrganizerRequestService, OrganizerRequestService>();
+builder.Services.AddSingleton<IEmailService, EmailService>();
 
 // Controllers
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -56,7 +57,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontEnd", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:5174"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .WithExposedHeaders("WWW-Authenticate");

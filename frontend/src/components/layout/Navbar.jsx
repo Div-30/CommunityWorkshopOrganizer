@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import {
   LogOut, User, Users, Briefcase, UserCog, Menu, Bell,
-  Zap, Sun, Moon,
+  Zap, Sun, Moon, UserCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { APP_NAME } from '../../utils/constants';
@@ -13,6 +13,7 @@ export function Navbar({ onOpenMenu }) {
   const { user, logout, setUser } = useAuth();
   const navigate = useNavigate();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const roles = [
     { value: 'Attendee', label: 'Attendee', icon: Users, path: '/dashboard' },
@@ -93,9 +94,41 @@ export function Navbar({ onOpenMenu }) {
               )}
             </div>
 
-            {/* User avatar */}
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] text-[13px] font-semibold">
-              {user.fullName?.charAt(0) || 'U'}
+            {/* User avatar with dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] text-[13px] font-semibold hover:ring-2 hover:ring-[var(--color-primary)] transition-all cursor-pointer"
+                title="Account"
+              >
+                {user.fullName?.charAt(0) || 'U'}
+              </button>
+              {showUserMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                  <div className="absolute right-0 mt-2 w-48 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1 shadow-[var(--shadow-modal)] z-50">
+                    <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-ink-tertiary)]">
+                      {user.fullName}
+                    </p>
+                    <Link
+                      to="/profile"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 text-[14px] text-[var(--color-ink-secondary)] hover:bg-[var(--color-surface-hover)] transition-colors"
+                    >
+                      <UserCircle size={15} />
+                      My Profile
+                    </Link>
+                    <div className="my-1 border-t border-[var(--color-border)]" />
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2.5 w-full px-3 py-2.5 text-[14px] text-[var(--color-danger)] hover:bg-[var(--color-danger-light)] transition-colors cursor-pointer"
+                    >
+                      <LogOut size={15} />
+                      Sign Out
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

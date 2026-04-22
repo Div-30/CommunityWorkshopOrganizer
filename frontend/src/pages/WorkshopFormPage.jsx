@@ -6,7 +6,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Calendar, MapPin, User, Users, Clock, Send, Plus, Trash2, Link as LinkIcon, DollarSign } from 'lucide-react';
-import { workshopAPI } from '../services/api';
+import { workshopAPI, resourceAPI } from '../services/api';
 
 export function WorkshopFormPage() {
   const { id } = useParams();
@@ -98,7 +98,16 @@ export function WorkshopFormPage() {
         await workshopAPI.update(id, payload);
         success('Workshop updated!');
       } else {
-        await workshopAPI.create(payload);
+        const created = await workshopAPI.create(payload);
+        // Save resources if any are filled in
+        const validResources = formData.resources.filter(r => r.title.trim() && r.url.trim());
+        for (const r of validResources) {
+          try {
+            await resourceAPI.add(created.workshopId, r.title.trim(), r.url.trim());
+          } catch {
+            // Non-critical: don't fail the whole submit if one resource fails
+          }
+        }
         success('Submitted for review 🔍 The admin will be notified.');
       }
       navigate('/organizer');

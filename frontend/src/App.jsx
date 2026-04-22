@@ -10,6 +10,7 @@ import { LandingPage } from './pages/LandingPage';
 /* Auth */
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 /* Attendee */
 import { AttendeeDashboard } from './pages/AttendeeDashboard';
@@ -40,6 +41,7 @@ function App() {
             {/* Auth */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
             {/* Attendee */}
             <Route path="/dashboard" element={<ProtectedRoute><AttendeeDashboard /></ProtectedRoute>} />
