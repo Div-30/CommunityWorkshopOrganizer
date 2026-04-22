@@ -92,7 +92,7 @@ export function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
               label="Full Name"
-              placeholder="Jane Doe"
+              placeholder="Divin Paul"
               value={formData.fullName}
               onChange={(e) => update('fullName', e.target.value)}
               error={errors.fullName}
@@ -102,7 +102,7 @@ export function RegisterPage() {
             <Input
               label="Email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="[EMAIL_ADDRESS]"
               value={formData.email}
               onChange={(e) => update('email', e.target.value)}
               error={errors.email}

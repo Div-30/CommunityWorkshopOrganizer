@@ -6,6 +6,7 @@ const apiFetch = async (endpoint, options = {}) => {
   if (rawToken && !token) localStorage.removeItem('token');
   const headers = {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   };
