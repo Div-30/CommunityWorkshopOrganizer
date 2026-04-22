@@ -8,18 +8,25 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { CapacityBar } from '../components/ui/CapacityBar';
 import { Spinner } from '../components/ui/Spinner';
-import { Calendar, Clock, MapPin, User, ArrowLeft, CreditCard } from 'lucide-react';
+import {
+  Calendar, Clock, MapPin, User, ArrowLeft,
+  CreditCard, CheckCircle, Users, Tag, BookOpen,
+} from 'lucide-react';
 import { workshopAPI, registrationAPI } from '../services/api';
+
+const STATUS_VARIANT = { Approved: 'approved', Pending: 'pending', Rejected: 'rejected' };
+const STATUS_LABEL = { Approved: 'Live', Pending: 'Under Review', Rejected: 'Not Approved' };
 
 export function WorkshopDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { error: showError } = useToast();
-  
+  const { success, error: showError } = useToast();
+
   const [workshop, setWorkshop] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     async function loadWorkshop() {
@@ -37,16 +44,36 @@ export function WorkshopDetailsPage() {
       }
     }
     loadWorkshop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleRegister = () => {
-    navigate(`/payments/${id}`);
+  const handleRegister = async () => {
+    if (workshop.isPaid) {
+      // Paid workshop → go through payment page
+      navigate(`/payments/${id}`);
+    } else {
+      // Free workshop → register directly
+      setRegistering(true);
+      try {
+        await registrationAPI.register(Number(id));
+        setIsRegistered(true);
+        setWorkshop(prev => ({
+          ...prev,
+          registrations: [...(prev.registrations || []), {}],
+        }));
+        success("You're registered! See you there 🎉");
+      } catch (err) {
+        showError(err.message || 'Failed to register. Please try again.');
+      } finally {
+        setRegistering(false);
+      }
+    }
   };
 
   const role = user?.role?.toLowerCase() || 'attendee';
   const currentAttendees = workshop?.registrations?.length || 0;
   const isFull = currentAttendees >= (workshop?.capacity || 0);
+  const spotsLeft = (workshop?.capacity || 0) - currentAttendees;
 
   if (loading) {
     return (
@@ -62,7 +89,7 @@ export function WorkshopDetailsPage() {
     return (
       <PageWrapper role={role}>
         <Card>
-          <p className="text-slate-500">Workshop not found</p>
+          <p className="text-[var(--color-ink-secondary)]">Workshop not found.</p>
         </Card>
       </PageWrapper>
     );
@@ -76,112 +103,209 @@ export function WorkshopDetailsPage() {
       </Button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+
+        {/* ── Left: Main Content ─────────────────────────────── */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* Hero Card */}
           <Card>
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <Badge variant="info">Workshop</Badge>
+            {/* Status badges */}
+            <div className="flex flex-wrap items-center gap-2 mb-5">
+              <Badge variant="info">
+                <BookOpen size={12} className="mr-1" />
+                Workshop
+              </Badge>
               {workshop.status && (
-                <Badge variant={workshop.status === 'Approved' ? 'approved' : workshop.status === 'Pending' ? 'pending' : 'rejected'}>
-                  {workshop.status}
+                <Badge variant={STATUS_VARIANT[workshop.status] || 'default'}>
+                  {STATUS_LABEL[workshop.status] || workshop.status}
                 </Badge>
               )}
-              {isFull && <Badge variant="soldout">Sold out</Badge>}
+              {workshop.isPaid ? (
+                <Badge variant="warning">
+                  <CreditCard size={12} className="mr-1" />
+                  Paid · {Number(workshop.price).toLocaleString()} RWF
+                </Badge>
+              ) : (
+                <Badge variant="success">Free</Badge>
+              )}
+              {isFull && <Badge variant="soldout">Sold Out</Badge>}
             </div>
 
-            <h1 className="text-[28px] font-semibold tracking-tight text-slate-900 mb-3">
+            {/* Title */}
+            <h1 className="text-[28px] font-bold tracking-tight text-[var(--color-ink)] leading-tight mb-2">
               {workshop.title}
             </h1>
-            <p className="text-[15px] text-slate-600 leading-relaxed mb-6">
+
+            {/* Short description teaser */}
+            <p className="text-[15px] text-[var(--color-ink-secondary)] leading-relaxed mb-6 line-clamp-3">
               {workshop.description}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div className="flex items-center gap-2 text-[14px] text-slate-600">
-                <User size={16} className="text-indigo-600" />
-                <span className="font-medium">Speaker:</span> {workshop.speakerName || 'TBA'}
-              </div>
-              <div className="flex items-center gap-2 text-[14px] text-slate-600">
-                <Calendar size={16} className="text-indigo-600" />
-                <span className="font-medium">Date:</span> {new Date(workshop.eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </div>
-              <div className="flex items-center gap-2 text-[14px] text-slate-600">
-                <Clock size={16} className="text-indigo-600" />
-                <span className="font-medium">Time:</span> {new Date(workshop.eventDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-              </div>
-              <div className="flex items-center gap-2 text-[14px] text-slate-600">
-                <MapPin size={16} className="text-indigo-600" />
-                <span className="font-medium">Location:</span> TBA Campus
-              </div>
+            {/* Key info grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+              {[
+                {
+                  icon: User,
+                  label: 'Speaker',
+                  value: workshop.speakerName || 'TBA',
+                },
+                {
+                  icon: Calendar,
+                  label: 'Date',
+                  value: new Date(workshop.eventDate).toLocaleDateString('en-US', {
+                    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+                  }),
+                },
+                {
+                  icon: Clock,
+                  label: 'Time',
+                  value: new Date(workshop.eventDate).toLocaleTimeString('en-US', {
+                    hour: 'numeric', minute: '2-digit',
+                  }),
+                },
+                {
+                  icon: MapPin,
+                  label: 'Location',
+                  value: 'TBA Campus',
+                },
+              ].map(({ icon: Icon, label, value }) => (
+                <div
+                  key={label}
+                  className="flex items-start gap-3 rounded-xl bg-[var(--color-surface-hover)] px-4 py-3"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-light)]">
+                    <Icon size={15} className="text-[var(--color-primary)]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-ink-tertiary)]">
+                      {label}
+                    </p>
+                    <p className="text-[14px] font-medium text-[var(--color-ink)] truncate">{value}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <CapacityBar current={currentAttendees} capacity={workshop.capacity} />
           </Card>
 
           {/* About Section */}
           <Card>
-            <h2 className="text-[18px] font-semibold text-slate-900 mb-3">About this workshop</h2>
-            <p className="text-[14px] text-slate-600 leading-relaxed">
+            <h2 className="text-[18px] font-semibold text-[var(--color-ink)] mb-4">
+              About this workshop
+            </h2>
+            <p className="text-[15px] text-[var(--color-ink-secondary)] leading-relaxed whitespace-pre-line">
               {workshop.description}
             </p>
           </Card>
+
+          {/* Speaker Card */}
+          <Card>
+            <h2 className="text-[18px] font-semibold text-[var(--color-ink)] mb-4">Your instructor</h2>
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-light)]">
+                <User size={24} className="text-[var(--color-primary)]" />
+              </div>
+              <div>
+                <p className="text-[16px] font-semibold text-[var(--color-ink)]">
+                  {workshop.speakerName || 'TBA'}
+                </p>
+                <p className="text-[13px] text-[var(--color-ink-tertiary)]">Workshop Host</p>
+              </div>
+            </div>
+          </Card>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
+        {/* ── Right: Sidebar ───────────────────────────────────── */}
+        <div className="space-y-5">
+
+          {/* Registration Card */}
           <Card>
-            <h3 className="text-[16px] font-semibold text-slate-900 mb-4">Registration</h3>
-            
+            <h3 className="text-[16px] font-semibold text-[var(--color-ink)] mb-4">Registration</h3>
+
+            {/* Pricing */}
+            <div className={`rounded-xl p-4 mb-4 ${workshop.isPaid ? 'bg-[var(--color-warning-light)]' : 'bg-[var(--color-success-light)]'}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-[var(--color-ink-secondary)]">
+                  {workshop.isPaid ? 'Registration Fee' : 'Admission'}
+                </span>
+                <span className={`text-[18px] font-bold ${workshop.isPaid ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]'}`}>
+                  {workshop.isPaid ? `${Number(workshop.price).toLocaleString()} RWF` : 'Free'}
+                </span>
+              </div>
+            </div>
+
+            {/* Capacity */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="flex items-center gap-1.5 text-[13px] text-[var(--color-ink-secondary)]">
+                  <Users size={13} />
+                  Spots
+                </span>
+                <span className="text-[13px] font-semibold text-[var(--color-ink)]">
+                  {spotsLeft} of {workshop.capacity} left
+                </span>
+              </div>
+              <CapacityBar current={currentAttendees} capacity={workshop.capacity} showLabel={false} />
+            </div>
+
+            {/* CTA */}
             {isRegistered ? (
               <div className="space-y-3">
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                  <p className="text-[14px] text-emerald-700 font-medium">You are registered</p>
+                <div className="flex items-center gap-2 rounded-xl bg-[var(--color-success-light)] px-4 py-3">
+                  <CheckCircle size={16} className="text-[var(--color-success)]" />
+                  <p className="text-[14px] font-medium text-[var(--color-success)]">
+                    You are registered!
+                  </p>
                 </div>
-                <Button variant="secondary" className="w-full" disabled>
-                  Already Registered
+                <Button variant="secondary" className="w-full" onClick={() => navigate('/my-schedule')}>
+                  View My Schedule
                 </Button>
               </div>
             ) : isFull ? (
               <div className="space-y-3">
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <p className="text-[14px] text-amber-700 font-medium">This workshop is full</p>
+                <div className="rounded-xl bg-[var(--color-warning-light)] px-4 py-3">
+                  <p className="text-[14px] font-medium text-[var(--color-warning)]">
+                    This workshop is full
+                  </p>
                 </div>
-                <Button variant="ghost" className="w-full">
+                <Button variant="ghost" className="w-full" disabled>
                   Join Waitlist
                 </Button>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="bg-slate-50 rounded-xl p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[13px] text-slate-600">Available seats</span>
-                    <span className="text-[14px] font-semibold text-slate-900">
-                      {workshop.capacity - currentAttendees} / {workshop.capacity}
-                    </span>
-                  </div>
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={handleRegister}
-                >
-                  <CreditCard size={16} />
-                  Register Now
-                </Button>
-              </div>
+              <Button
+                className="w-full"
+                onClick={handleRegister}
+                loading={registering}
+              >
+                {workshop.isPaid ? (
+                  <>
+                    <CreditCard size={16} />
+                    Pay & Register · {Number(workshop.price).toLocaleString()} RWF
+                  </>
+                ) : (
+                  'Register Now — It\'s Free!'
+                )}
+              </Button>
             )}
           </Card>
 
+          {/* Quick Facts Card */}
           <Card>
-            <h3 className="text-[16px] font-semibold text-slate-900 mb-3">Speaker</h3>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                <User size={20} className="text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-[14px] font-medium text-slate-900">{workshop.speakerName || 'TBA'}</p>
-                <p className="text-[13px] text-slate-500">Workshop Host</p>
-              </div>
-            </div>
+            <h3 className="text-[15px] font-semibold text-[var(--color-ink)] mb-3">Quick Facts</h3>
+            <ul className="space-y-2">
+              <li className="flex items-center gap-2 text-[13px] text-[var(--color-ink-secondary)]">
+                <Tag size={13} className="text-[var(--color-primary)]" />
+                {workshop.status === 'Approved' ? 'Officially approved' : 'Pending approval'}
+              </li>
+              <li className="flex items-center gap-2 text-[13px] text-[var(--color-ink-secondary)]">
+                <Users size={13} className="text-[var(--color-primary)]" />
+                {workshop.capacity} total seats
+              </li>
+              <li className="flex items-center gap-2 text-[13px] text-[var(--color-ink-secondary)]">
+                <Calendar size={13} className="text-[var(--color-primary)]" />
+                Added {new Date(workshop.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </li>
+            </ul>
           </Card>
         </div>
       </div>

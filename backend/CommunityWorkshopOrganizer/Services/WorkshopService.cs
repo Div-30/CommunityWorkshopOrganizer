@@ -37,6 +37,7 @@ namespace CommunityWorkshopOrganizer.Services
             workshop.Registrations = null!;
             workshop.Status = "Pending";
             workshop.CreatedAt = DateTime.UtcNow;
+            // IsPaid and Price come directly from the request body
 
             _context.Workshops.Add(workshop);
             _context.SaveChanges();
@@ -74,6 +75,10 @@ namespace CommunityWorkshopOrganizer.Services
 
             if (updatedData.Capacity > 0)
                 workshop.Capacity = updatedData.Capacity;
+
+            workshop.IsPaid = updatedData.IsPaid;
+            if (updatedData.IsPaid)
+                workshop.Price = updatedData.Price;
 
             _context.SaveChanges();
 

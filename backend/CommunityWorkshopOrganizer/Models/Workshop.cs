@@ -15,5 +15,7 @@ namespace CommunityWorkshopOrganizer.Models
         public List<Resource> Resources { get; set; } = new ();
         public string Status { get; set; } = "Pending";
         public string? RejectionReason { get; set; }
+        public bool IsPaid { get; set; } = false;
+        public decimal Price { get; set; } = 0;
     }
 }

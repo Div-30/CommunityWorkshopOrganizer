@@ -217,30 +217,33 @@ export function PaymentsPage() {
                 <div>
                   <p className="text-[14px] font-medium text-slate-900 mb-1">{workshop.title}</p>
                   <p className="text-[13px] text-slate-500">
-                    {new Date(workshop.eventDate).toLocaleDateString('en-US', { 
-                      month: 'long', 
-                      day: 'numeric', 
-                      year: 'numeric' 
+                    {new Date(workshop.eventDate).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
                     })}
+                  </p>
+                  <p className="text-[13px] text-slate-500 mt-0.5">
+                    {new Date(workshop.eventDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-[14px]">
-                  <span className="text-slate-600">Workshop Fee</span>
-                  <span className="text-slate-900 font-medium">$49.00</span>
-                </div>
-                <div className="flex justify-between text-[14px]">
-                  <span className="text-slate-600">Processing Fee</span>
-                  <span className="text-slate-900 font-medium">$2.00</span>
+                  <span className="text-slate-600">Registration Fee</span>
+                  <span className="text-slate-900 font-medium">
+                    {Number(workshop.price).toLocaleString()} RWF
+                  </span>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-slate-200">
                 <div className="flex justify-between">
                   <span className="text-[16px] font-semibold text-slate-900">Total</span>
-                  <span className="text-[18px] font-bold text-indigo-600">$51.00</span>
+                  <span className="text-[18px] font-bold text-indigo-600">
+                    {Number(workshop.price).toLocaleString()} RWF
+                  </span>
                 </div>
               </div>
             </Card>

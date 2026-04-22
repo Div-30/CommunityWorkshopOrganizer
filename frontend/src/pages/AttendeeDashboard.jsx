@@ -18,7 +18,7 @@ const FILTER_TAGS = ['All', ...WORKSHOP_TAGS.slice(0, 8)];
 
 export function AttendeeDashboard() {
   const { user } = useAuth();
-  const { error: showError } = useToast();
+  const { success, error: showError } = useToast();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTag, setActiveTag] = useState('All');
@@ -59,9 +59,24 @@ export function AttendeeDashboard() {
       return matchesSearch;
     });
 
-  const handleRegister = (workshopId, e) => {
+  const handleRegister = async (workshop, e) => {
     e.stopPropagation();
-    navigate(`/payments/${workshopId}`);
+    if (workshop.isPaid) {
+      navigate(`/payments/${workshop.workshopId}`);
+    } else {
+      try {
+        await registrationAPI.register(workshop.workshopId);
+        setRsvpIds(prev => new Set([...prev, workshop.workshopId]));
+        success("Registered! See you there 🎉");
+        setWorkshops(ws => ws.map(w =>
+          w.workshopId === workshop.workshopId
+            ? { ...w, registrations: [...(w.registrations || []), {}] }
+            : w
+        ));
+      } catch (err) {
+        showError(err.message || 'Registration failed. You may already be registered.');
+      }
+    }
   };
 
   return (
@@ -164,8 +179,13 @@ export function AttendeeDashboard() {
                     Join Waitlist
                   </Button>
                 ) : (
-                  <Button className="w-full" onClick={(e) => handleRegister(workshop.workshopId, e)}>
-                    Register Now
+                  <Button
+                    className="w-full"
+                    onClick={(e) => handleRegister(workshop, e)}
+                  >
+                    {workshop.isPaid
+                      ? `Pay & Register · ${Number(workshop.price).toLocaleString()} RWF`
+                      : 'Register Now — Free'}
                   </Button>
                 )}
               </Card>

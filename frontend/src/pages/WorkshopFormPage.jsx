@@ -5,9 +5,7 @@ import { PageWrapper } from '../components/layout/PageWrapper';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { TagSelector } from '../components/ui/TagSelector';
-import { Calendar, MapPin, User, Users, Clock, Send, Plus, Trash2, Link as LinkIcon } from 'lucide-react';
-import { WORKSHOP_TAGS } from '../utils/constants';
+import { Calendar, MapPin, User, Users, Clock, Send, Plus, Trash2, Link as LinkIcon, DollarSign } from 'lucide-react';
 import { workshopAPI } from '../services/api';
 
 export function WorkshopFormPage() {
@@ -24,7 +22,8 @@ export function WorkshopFormPage() {
     location: '',
     speaker: '',
     capacity: '',
-    tags: [],
+    isPaid: false,
+    price: '',
     resources: [{ title: '', url: '' }],
   });
 
@@ -34,7 +33,6 @@ export function WorkshopFormPage() {
     workshopAPI.getById(id)
       .then((data) => {
         if (!data) return;
-        // Convert eventDate (ISO) back to date/time strings for the form
         const dateObj = data.eventDate ? new Date(data.eventDate) : null;
         setFormData({
           title: data.title || '',
@@ -44,7 +42,8 @@ export function WorkshopFormPage() {
           location: data.location || '',
           speaker: data.speakerName || '',
           capacity: data.capacity ? String(data.capacity) : '',
-          tags: data.tags || [],
+          isPaid: data.isPaid || false,
+          price: data.price ? String(data.price) : '',
           resources: data.resources?.length ? data.resources : [{ title: '', url: '' }],
         });
       })
@@ -56,14 +55,8 @@ export function WorkshopFormPage() {
   const charCount = formData.description.length;
   const maxChars = 500;
 
-  const addResource = () => {
-    update('resources', [...formData.resources, { title: '', url: '' }]);
-  };
-
-  const removeResource = (index) => {
-    update('resources', formData.resources.filter((_, i) => i !== index));
-  };
-
+  const addResource = () => update('resources', [...formData.resources, { title: '', url: '' }]);
+  const removeResource = (index) => update('resources', formData.resources.filter((_, i) => i !== index));
   const updateResource = (index, field, value) => {
     const updated = [...formData.resources];
     updated[index] = { ...updated[index], [field]: value };
@@ -78,6 +71,8 @@ export function WorkshopFormPage() {
     if (!formData.time) e.time = 'What time should people arrive?';
     if (!formData.speaker.trim()) e.speaker = 'Who is leading this workshop?';
     if (!formData.capacity || Number(formData.capacity) < 1) e.capacity = 'How many people can join?';
+    if (formData.isPaid && (!formData.price || Number(formData.price) < 1))
+      e.price = 'Enter the registration fee in RWF';
     return e;
   };
 
@@ -88,16 +83,15 @@ export function WorkshopFormPage() {
     setLoading(true);
 
     try {
-      // Combine date + time into a single ISO datetime for the backend's EventDate
       const eventDate = new Date(`${formData.date}T${formData.time || '00:00'}`).toISOString();
-
       const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         speakerName: formData.speaker.trim(),
         eventDate,
         capacity: Number(formData.capacity),
-        // location and tags aren't in the DB model but included for future-proofing
+        isPaid: formData.isPaid,
+        price: formData.isPaid ? Number(formData.price) : 0,
       };
 
       if (id) {
@@ -122,6 +116,7 @@ export function WorkshopFormPage() {
       subtitle={id ? 'Update the details below' : 'Share your knowledge with the community'}
     >
       <div className="max-w-2xl">
+
         {/* Basic Info */}
         <Card className="mb-5">
           <h2 className="text-[16px] font-semibold text-[var(--color-ink)] mb-4">Basic Info</h2>
@@ -134,7 +129,6 @@ export function WorkshopFormPage() {
               error={errors.title}
               required
             />
-
             <div>
               <Input
                 label="Description"
@@ -152,7 +146,6 @@ export function WorkshopFormPage() {
                 {charCount}/{maxChars}
               </p>
             </div>
-
             <Input
               label="Speaker / Instructor"
               placeholder="Your name or the speaker's name"
@@ -201,11 +194,11 @@ export function WorkshopFormPage() {
           </div>
         </Card>
 
-        {/* Capacity & Tags */}
+        {/* Capacity */}
         <Card className="mb-5">
-          <h2 className="text-[16px] font-semibold text-[var(--color-ink)] mb-4">Capacity & Tags</h2>
+          <h2 className="text-[16px] font-semibold text-[var(--color-ink)] mb-4">Capacity</h2>
           <Input
-            label="Maximum Capacity"
+            label="Maximum Attendees"
             type="number"
             placeholder="e.g., 30"
             value={formData.capacity}
@@ -214,23 +207,60 @@ export function WorkshopFormPage() {
             icon={Users}
             required
           />
-          <div className="mt-4">
-            <label className="block text-[13px] font-medium text-[var(--color-ink)] mb-2">
-              Tags
-              <span className="ml-2 font-normal text-[var(--color-ink-tertiary)]">Select relevant topics</span>
-            </label>
-            <TagSelector
-              selected={formData.tags}
-              onChange={(tags) => update('tags', tags)}
-              tags={WORKSHOP_TAGS}
-            />
+        </Card>
+
+        {/* Pricing */}
+        <Card className="mb-5">
+          <h2 className="text-[16px] font-semibold text-[var(--color-ink)] mb-4">Pricing</h2>
+          <div className="flex gap-3 mb-4">
+            {[
+              { value: false, label: 'Free', desc: 'No registration fee' },
+              { value: true, label: 'Paid', desc: 'Requires payment to attend' },
+            ].map((option) => (
+              <button
+                key={String(option.value)}
+                type="button"
+                onClick={() => update('isPaid', option.value)}
+                className={`
+                  flex-1 rounded-xl border-2 px-4 py-3 text-center transition-all duration-150 cursor-pointer
+                  ${formData.isPaid === option.value
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
+                    : 'border-[var(--color-border)] hover:border-[var(--color-ink-tertiary)]'
+                  }
+                `}
+              >
+                <p className={`text-[14px] font-semibold ${formData.isPaid === option.value ? 'text-[var(--color-primary)]' : 'text-[var(--color-ink)]'}`}>
+                  {option.label}
+                </p>
+                <p className="mt-0.5 text-[11px] text-[var(--color-ink-tertiary)]">{option.desc}</p>
+              </button>
+            ))}
           </div>
+
+          {formData.isPaid && (
+            <div className="mt-2">
+              <Input
+                label="Registration Fee"
+                type="number"
+                placeholder="e.g., 5000"
+                value={formData.price}
+                onChange={(e) => update('price', e.target.value)}
+                error={errors.price}
+                icon={DollarSign}
+                hint="RWF"
+                required
+              />
+              <p className="text-[12px] text-[var(--color-ink-tertiary)] mt-1.5 px-1">
+                Attendees will be required to complete payment before their spot is confirmed.
+              </p>
+            </div>
+          )}
         </Card>
 
         {/* Resources */}
         <Card className="mb-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[16px] font-semibold text-[var(--color-ink)]">Resources</h2>
+            <h2 className="text-[16px] font-semibold text-[var(--color-ink)]">Resources <span className="text-[12px] font-normal text-[var(--color-ink-tertiary)]">optional</span></h2>
             <Button variant="ghost" size="sm" onClick={addResource}>
               <Plus size={14} />
               Add Link
@@ -265,20 +295,12 @@ export function WorkshopFormPage() {
           </div>
         </Card>
 
-        {/* Sticky action bar */}
+        {/* Action bar */}
         <div className="sticky bottom-0 bg-[var(--color-bg)]/95 backdrop-blur-sm border-t border-[var(--color-border)] py-4 -mx-6 px-6 flex gap-3">
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/organizer')}
-            className="flex-1"
-          >
+          <Button variant="secondary" onClick={() => navigate('/organizer')} className="flex-1">
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            loading={loading}
-            className="flex-1"
-          >
+          <Button onClick={handleSubmit} loading={loading} className="flex-1">
             <Send size={16} />
             {id ? 'Save Changes' : 'Submit for Review'}
           </Button>
