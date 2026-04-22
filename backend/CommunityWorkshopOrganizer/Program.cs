@@ -52,17 +52,25 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// CORS
+// CORS — localhost for dev + any extra origins from ALLOWED_ORIGINS env var
+var allowedOrigins = new List<string>
+{
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174"
+};
+// Add Vercel / ngrok URLs at runtime:  ALLOWED_ORIGINS=https://my-app.vercel.app,https://other.com
+var extraOrigins = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS");
+if (!string.IsNullOrWhiteSpace(extraOrigins))
+{
+    allowedOrigins.AddRange(extraOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+}
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontEnd", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "http://127.0.0.1:5173",
-                "http://127.0.0.1:5174"
-              )
+        policy.WithOrigins(allowedOrigins.ToArray())
               .AllowAnyHeader()
               .AllowAnyMethod()
               .WithExposedHeaders("WWW-Authenticate");
