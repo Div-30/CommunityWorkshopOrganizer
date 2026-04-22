@@ -54,9 +54,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             return Ok(new { Message = result.Message });
         }
 
-        // GET /api/registration/workshop/{workshopId} — Organiser and Admin only
+        // GET /api/registration/workshop/{workshopId} — Organizer and Admin only
         [HttpGet("workshop/{workshopId}")]
-        [Authorize(Roles = "Organiser,Admin")]
+        [Authorize(Roles = "Organizer,Admin")]
         public IActionResult GetWorkshopAttendees(int workshopId)
         {
             var result = _registrationService.GetAttendees(workshopId);

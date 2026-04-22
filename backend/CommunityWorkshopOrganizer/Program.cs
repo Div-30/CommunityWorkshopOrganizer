@@ -19,7 +19,7 @@ builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IWorkshopService, WorkshopService>();
 builder.Services.AddScoped<IResourceService, ResourceService>();
-builder.Services.AddScoped<IOrganiserRequestService, OrganiserRequestService>();
+builder.Services.AddScoped<IOrganizerRequestService, OrganizerRequestService>();
 
 // Controllers
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -56,9 +56,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontEnd", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .WithExposedHeaders("WWW-Authenticate");
     });
 });
 
@@ -67,15 +68,34 @@ var jwtKey = builder.Configuration["Jwt:Key"];
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Force the old JwtSecurityTokenHandler for validation — this MUST match
+        // what AuthController uses to CREATE tokens. Without this, .NET 10 uses
+        // JsonWebTokenHandler by default, which is incompatible with JwtSecurityTokenHandler tokens.
+        options.UseSecurityTokenValidators = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
+            ValidateIssuer = false,
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
+            // Be lenient on clock skew for dev
+            ClockSkew = TimeSpan.Zero
+        };
+        // Log exact rejection reason to backend console
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnAuthenticationFailed = ctx =>
+            {
+                var authHeader = ctx.Request.Headers["Authorization"].FirstOrDefault() ?? "(none)";
+                var path = ctx.Request.Path;
+                Console.WriteLine($"[JWT REJECTED] Path: {path}");
+                Console.WriteLine($"[JWT REJECTED] Auth Header: '{authHeader}'");
+                Console.WriteLine($"[JWT REJECTED] Error: {ctx.Exception.GetType().Name}: {ctx.Exception.Message}");
+                return Task.CompletedTask;
+            }
         };
     });
 

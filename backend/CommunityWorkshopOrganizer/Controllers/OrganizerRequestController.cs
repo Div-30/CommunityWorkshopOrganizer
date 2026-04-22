@@ -7,11 +7,11 @@ namespace CommunityWorkshopOrganizer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class OrganiserRequestController : ControllerBase
+    public class OrganizerRequestController : ControllerBase
     {
-        private readonly IOrganiserRequestService _requestService;
+        private readonly IOrganizerRequestService _requestService;
 
-        public OrganiserRequestController(IOrganiserRequestService requestService)
+        public OrganizerRequestController(IOrganizerRequestService requestService)
         {
             _requestService = requestService;
         }
@@ -21,7 +21,7 @@ namespace CommunityWorkshopOrganizer.Controllers
             public string Message { get; set; } = string.Empty;
         }
 
-        // POST /api/organiser-request — Attendee submits an application to be an Organiser
+        // POST /api/organizer-request — Attendee submits an application to be an Organizer
         [HttpPost]
         [Authorize(Roles = "Attendee")]
         public IActionResult SubmitRequest([FromBody] SubmitRequestPayload payload)
@@ -29,35 +29,35 @@ namespace CommunityWorkshopOrganizer.Controllers
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var result = _requestService.SubmitRequest(userId, payload.Message);
 
-            if (result.Status == OrganiserRequestResultStatus.NotFound)
+            if (result.Status == OrganizerRequestResultStatus.NotFound)
                 return NotFound(result.Message);
 
-            if (result.Status == OrganiserRequestResultStatus.Duplicate || result.Status == OrganiserRequestResultStatus.ValidationError)
+            if (result.Status == OrganizerRequestResultStatus.Duplicate || result.Status == OrganizerRequestResultStatus.ValidationError)
                 return BadRequest(result.Message);
 
             return Ok(result.Data);
         }
 
-        // GET /api/organiser-request — Admin views all applications (filter by status optional)
+        // GET /api/organizer-request — Admin/Manager views all applications (filter by status optional)
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult GetAllRequests([FromQuery] string? status)
         {
             var result = _requestService.GetAllRequests(status);
             return Ok(result.Data);
         }
 
-        // PUT /api/organiser-request/{id}/approve — Admin approves application
+        // PUT /api/organizer-request/{id}/approve — Admin/Manager approves application
         [HttpPut("{id}/approve")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult ApproveRequest(int id)
         {
             var result = _requestService.ApproveRequest(id);
 
-            if (result.Status == OrganiserRequestResultStatus.NotFound)
+            if (result.Status == OrganizerRequestResultStatus.NotFound)
                 return NotFound(result.Message);
 
-            if (result.Status == OrganiserRequestResultStatus.ValidationError)
+            if (result.Status == OrganizerRequestResultStatus.ValidationError)
                 return BadRequest(result.Message);
 
             return Ok(new { Message = result.Message });
@@ -68,17 +68,17 @@ namespace CommunityWorkshopOrganizer.Controllers
             public string Reason { get; set; } = string.Empty;
         }
 
-        // PUT /api/organiser-request/{id}/reject — Admin rejects application
+        // PUT /api/organizer-request/{id}/reject — Admin/Manager rejects application
         [HttpPut("{id}/reject")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult RejectRequest(int id, [FromBody] RejectRequestPayload payload)
         {
             var result = _requestService.RejectRequest(id, payload.Reason);
 
-            if (result.Status == OrganiserRequestResultStatus.NotFound)
+            if (result.Status == OrganizerRequestResultStatus.NotFound)
                 return NotFound(result.Message);
 
-            if (result.Status == OrganiserRequestResultStatus.ValidationError)
+            if (result.Status == OrganizerRequestResultStatus.ValidationError)
                 return BadRequest(result.Message);
 
             return Ok(new { Message = result.Message });

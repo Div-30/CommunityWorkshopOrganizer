@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CommunityWorkshopOrganizer.Models
 {
-    public class OrganiserRequest
+    public class OrganizerRequest
     {
         [Key]
         public int RequestId { get; set; }

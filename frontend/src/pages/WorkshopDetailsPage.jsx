@@ -15,12 +15,11 @@ export function WorkshopDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { success, error: showError } = useToast();
+  const { error: showError } = useToast();
   
   const [workshop, setWorkshop] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
-  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     async function loadWorkshop() {
@@ -41,20 +40,7 @@ export function WorkshopDetailsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleRegister = async () => {
-    setRegistering(true);
-    try {
-      await registrationAPI.register(Number(id));
-      setIsRegistered(true);
-      success('Registration successful!');
-    } catch (err) {
-      showError(err.message || 'Failed to register');
-    } finally {
-      setRegistering(false);
-    }
-  };
-
-  const handlePayment = () => {
+  const handleRegister = () => {
     navigate(`/payments/${id}`);
   };
 
@@ -174,20 +160,12 @@ export function WorkshopDetailsPage() {
                     </span>
                   </div>
                 </div>
-                <Button 
-                  className="w-full bg-emerald-500 hover:bg-emerald-600" 
+                <Button
+                  className="w-full"
                   onClick={handleRegister}
-                  loading={registering}
-                >
-                  Register Now
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  className="w-full" 
-                  onClick={handlePayment}
                 >
                   <CreditCard size={16} />
-                  Pay & Register
+                  Register Now
                 </Button>
               </div>
             )}

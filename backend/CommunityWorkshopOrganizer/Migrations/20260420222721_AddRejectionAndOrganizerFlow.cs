@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace CommunityWorkshopOrganizer.Migrations
 {
     /// <inheritdoc />
-    public partial class AddRejectionAndOrganiserFlow : Migration
+    public partial class AddRejectionAndOrganizerFlow : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,7 +18,7 @@ namespace CommunityWorkshopOrganizer.Migrations
                 nullable: true);
 
             migrationBuilder.CreateTable(
-                name: "OrganiserRequests",
+                name: "OrganizerRequests",
                 columns: table => new
                 {
                     RequestId = table.Column<int>(type: "INTEGER", nullable: false)
@@ -31,9 +31,9 @@ namespace CommunityWorkshopOrganizer.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OrganiserRequests", x => x.RequestId);
+                    table.PrimaryKey("PK_OrganizerRequests", x => x.RequestId);
                     table.ForeignKey(
-                        name: "FK_OrganiserRequests_Users_UserId",
+                        name: "FK_OrganizerRequests_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "UserId",
@@ -41,8 +41,8 @@ namespace CommunityWorkshopOrganizer.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrganiserRequests_UserId",
-                table: "OrganiserRequests",
+                name: "IX_OrganizerRequests_UserId",
+                table: "OrganizerRequests",
                 column: "UserId");
         }
 
@@ -50,7 +50,7 @@ namespace CommunityWorkshopOrganizer.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "OrganiserRequests");
+                name: "OrganizerRequests");
 
             migrationBuilder.DropColumn(
                 name: "RejectionReason",

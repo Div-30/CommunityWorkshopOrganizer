@@ -18,7 +18,7 @@ const FILTER_TAGS = ['All', ...WORKSHOP_TAGS.slice(0, 8)];
 
 export function AttendeeDashboard() {
   const { user } = useAuth();
-  const { success, error: showError } = useToast();
+  const { error: showError } = useToast();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTag, setActiveTag] = useState('All');
@@ -59,20 +59,9 @@ export function AttendeeDashboard() {
       return matchesSearch;
     });
 
-  const handleRsvp = async (workshopId, e) => {
+  const handleRegister = (workshopId, e) => {
     e.stopPropagation();
-    try {
-      await registrationAPI.register(workshopId);
-      setRsvpIds(prev => new Set([...prev, workshopId]));
-      success('Spot saved! See you there');
-      setWorkshops(ws => ws.map(w =>
-        w.workshopId === workshopId
-          ? { ...w, registrations: [...(w.registrations || []), {}] }
-          : w
-      ));
-    } catch (err) {
-      showError(err.message || 'Failed to RSVP. You might already be registered or the session is full.');
-    }
+    navigate(`/payments/${workshopId}`);
   };
 
   return (
@@ -175,8 +164,8 @@ export function AttendeeDashboard() {
                     Join Waitlist
                   </Button>
                 ) : (
-                  <Button className="w-full bg-emerald-500 hover:bg-emerald-600" onClick={(e) => handleRsvp(workshop.workshopId, e)}>
-                    Count me in!
+                  <Button className="w-full" onClick={(e) => handleRegister(workshop.workshopId, e)}>
+                    Register Now
                   </Button>
                 )}
               </Card>

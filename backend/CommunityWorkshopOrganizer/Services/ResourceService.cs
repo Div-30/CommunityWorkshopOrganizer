@@ -26,7 +26,7 @@ namespace CommunityWorkshopOrganizer.Services
                 return (ResourceResultStatus.NotFound, "Workshop not found.", null);
             }
 
-            // Only the organiser who owns this workshop can add resources to it
+            // Only the organizer who owns this workshop can add resources to it
             if (workshop.OrganizerId != organizerId)
             {
                 return (ResourceResultStatus.Forbidden, "You are not authorised to add resources to this workshop.", null);
@@ -52,7 +52,7 @@ namespace CommunityWorkshopOrganizer.Services
                 return (ResourceResultStatus.NotFound, "Resource not found.");
             }
 
-            // Only the organiser who owns the parent workshop can delete its resources
+            // Only the organizer who owns the parent workshop can delete its resources
             if (resource.Workshop?.OrganizerId != organizerId)
             {
                 return (ResourceResultStatus.Forbidden, "You are not authorised to delete this resource.");
@@ -79,8 +79,8 @@ namespace CommunityWorkshopOrganizer.Services
                 return (ResourceResultStatus.Success, "Resources retrieved.", resources);
             }
 
-            // Organisers can only view resources for their own workshop
-            if (userRole == "Organiser")
+            // Organizers can only view resources for their own workshop
+            if (userRole == "Organizer")
             {
                 if (workshop.OrganizerId != userId)
                     return (ResourceResultStatus.Forbidden, "You are not authorised to view resources for this workshop.", null);

@@ -6,13 +6,14 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { TagSelector } from '../components/ui/TagSelector';
-import { Calendar, MapPin, User, Users, Clock, Save, Send, Plus, Trash2, Link as LinkIcon } from 'lucide-react';
+import { Calendar, MapPin, User, Users, Clock, Send, Plus, Trash2, Link as LinkIcon } from 'lucide-react';
 import { WORKSHOP_TAGS } from '../utils/constants';
+import { workshopAPI } from '../services/api';
 
 export function WorkshopFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { success, error } = useToast();
+  const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
@@ -26,6 +27,30 @@ export function WorkshopFormPage() {
     tags: [],
     resources: [{ title: '', url: '' }],
   });
+
+  // Load existing workshop when editing
+  useEffect(() => {
+    if (!id) return;
+    workshopAPI.getById(id)
+      .then((data) => {
+        if (!data) return;
+        // Convert eventDate (ISO) back to date/time strings for the form
+        const dateObj = data.eventDate ? new Date(data.eventDate) : null;
+        setFormData({
+          title: data.title || '',
+          description: data.description || '',
+          date: dateObj ? dateObj.toISOString().split('T')[0] : '',
+          time: dateObj ? dateObj.toTimeString().slice(0, 5) : '',
+          location: data.location || '',
+          speaker: data.speakerName || '',
+          capacity: data.capacity ? String(data.capacity) : '',
+          tags: data.tags || [],
+          resources: data.resources?.length ? data.resources : [{ title: '', url: '' }],
+        });
+      })
+      .catch(() => showError('Failed to load workshop for editing.'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const update = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
   const charCount = formData.description.length;
@@ -47,28 +72,47 @@ export function WorkshopFormPage() {
 
   const validate = () => {
     const e = {};
-    if (!formData.title) e.title = 'Give your workshop a catchy title';
-    if (!formData.description) e.description = 'Tell people what they\'ll learn';
+    if (!formData.title.trim()) e.title = 'Give your workshop a catchy title';
+    if (!formData.description.trim()) e.description = "Tell people what they'll learn";
     if (!formData.date) e.date = 'When is this happening?';
     if (!formData.time) e.time = 'What time should people arrive?';
-    if (!formData.location) e.location = 'Where will this take place?';
-    if (!formData.speaker) e.speaker = 'Who is leading this workshop?';
-    if (!formData.capacity || formData.capacity < 1) e.capacity = 'How many people can join?';
+    if (!formData.speaker.trim()) e.speaker = 'Who is leading this workshop?';
+    if (!formData.capacity || Number(formData.capacity) < 1) e.capacity = 'How many people can join?';
     return e;
   };
 
-  const handleSubmit = (isDraft = false) => {
-    if (!isDraft) {
-      const v = validate();
-      if (Object.keys(v).length > 0) { setErrors(v); return; }
-    }
+  const handleSubmit = async () => {
+    const v = validate();
+    if (Object.keys(v).length > 0) { setErrors(v); return; }
     setErrors({});
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      success(isDraft ? 'Draft saved!' : id ? 'Workshop updated!' : 'Submitted for review 🔍');
+
+    try {
+      // Combine date + time into a single ISO datetime for the backend's EventDate
+      const eventDate = new Date(`${formData.date}T${formData.time || '00:00'}`).toISOString();
+
+      const payload = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        speakerName: formData.speaker.trim(),
+        eventDate,
+        capacity: Number(formData.capacity),
+        // location and tags aren't in the DB model but included for future-proofing
+      };
+
+      if (id) {
+        await workshopAPI.update(id, payload);
+        success('Workshop updated!');
+      } else {
+        await workshopAPI.create(payload);
+        success('Submitted for review 🔍 The admin will be notified.');
+      }
       navigate('/organizer');
-    }, 800);
+    } catch (err) {
+      showError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,6 +132,7 @@ export function WorkshopFormPage() {
               value={formData.title}
               onChange={(e) => update('title', e.target.value)}
               error={errors.title}
+              required
             />
 
             <div>
@@ -101,6 +146,7 @@ export function WorkshopFormPage() {
                 }}
                 error={errors.description}
                 rows={4}
+                required
               />
               <p className={`text-right text-[11px] mt-1 ${charCount > maxChars * 0.9 ? 'text-[var(--color-warning)]' : 'text-[var(--color-ink-tertiary)]'}`}>
                 {charCount}/{maxChars}
@@ -114,6 +160,7 @@ export function WorkshopFormPage() {
               onChange={(e) => update('speaker', e.target.value)}
               error={errors.speaker}
               icon={User}
+              required
             />
           </div>
         </Card>
@@ -129,6 +176,7 @@ export function WorkshopFormPage() {
               onChange={(e) => update('date', e.target.value)}
               error={errors.date}
               icon={Calendar}
+              required
             />
             <Input
               label="Time"
@@ -137,11 +185,13 @@ export function WorkshopFormPage() {
               onChange={(e) => update('time', e.target.value)}
               error={errors.time}
               icon={Clock}
+              required
             />
           </div>
           <div className="mt-4">
             <Input
               label="Location"
+              hint="optional"
               placeholder="e.g., Room 204, Innovation Hub"
               value={formData.location}
               onChange={(e) => update('location', e.target.value)}
@@ -162,6 +212,7 @@ export function WorkshopFormPage() {
             onChange={(e) => update('capacity', e.target.value)}
             error={errors.capacity}
             icon={Users}
+            required
           />
           <div className="mt-4">
             <label className="block text-[13px] font-medium text-[var(--color-ink)] mb-2">
@@ -218,19 +269,18 @@ export function WorkshopFormPage() {
         <div className="sticky bottom-0 bg-[var(--color-bg)]/95 backdrop-blur-sm border-t border-[var(--color-border)] py-4 -mx-6 px-6 flex gap-3">
           <Button
             variant="secondary"
-            onClick={() => handleSubmit(true)}
+            onClick={() => navigate('/organizer')}
             className="flex-1"
           >
-            <Save size={16} />
-            Save Draft
+            Cancel
           </Button>
           <Button
-            onClick={() => handleSubmit(false)}
+            onClick={handleSubmit}
             loading={loading}
             className="flex-1"
           >
             <Send size={16} />
-            Submit for Review
+            {id ? 'Save Changes' : 'Submit for Review'}
           </Button>
         </div>
       </div>

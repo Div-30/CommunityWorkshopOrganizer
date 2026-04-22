@@ -6,6 +6,7 @@ export function Input({
   as = 'input',
   className = '',
   rows = 4,
+  required = false,
   ...props
 }) {
   const Component = as;
@@ -13,10 +14,15 @@ export function Input({
   return (
     <label className="block space-y-1.5">
       {label && (
-        <span className="block text-[13px] font-medium text-[var(--color-ink)]">
-          {label}
-          {hint && (
-            <span className="ml-2 font-normal text-[var(--color-ink-tertiary)]">{hint}</span>
+        <span className="flex items-center justify-between">
+          <span className="text-[13px] font-medium text-[var(--color-ink)]">
+            {label}
+            {hint && (
+              <span className="ml-2 font-normal text-[var(--color-ink-tertiary)]">{hint}</span>
+            )}
+          </span>
+          {required && (
+            <span className="text-[11px] font-semibold text-[var(--color-danger)]" title="Required">*</span>
           )}
         </span>
       )}

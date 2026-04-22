@@ -66,6 +66,13 @@ export const workshopAPI = {
     apiFetch(`/Workshop/${id}`, {
       method: 'DELETE',
     }),
+  approve: (id) =>
+    apiFetch(`/Workshop/${id}/approve`, { method: 'PUT' }),
+  reject: (id, reason) =>
+    apiFetch(`/Workshop/${id}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify({ reason }),
+    }),
 };
 
 export const registrationAPI = {
@@ -87,7 +94,20 @@ export const organizerRequestAPI = {
     apiFetch('/OrganizerRequest', {
       method: 'POST',
       body: JSON.stringify({ message }),
-    })
+    }),
+  getAll: (status) =>
+    apiFetch('/OrganizerRequest' + (status ? `?status=${status}` : '')),
+  approve: (id) =>
+    apiFetch(`/OrganizerRequest/${id}/approve`, { method: 'PUT' }),
+  reject: (id, reason) =>
+    apiFetch(`/OrganizerRequest/${id}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify({ reason }),
+    }),
+};
+
+export const userAPI = {
+  getAll: () => apiFetch('/User'),
 };
 
 export default apiFetch;

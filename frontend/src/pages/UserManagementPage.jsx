@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -7,6 +7,7 @@ import { SearchBar } from '../components/ui/SearchBar';
 import { DataTable } from '../components/ui/DataTable';
 import { Button } from '../components/ui/Button';
 import { useToast } from '../context/ToastContext';
+import { userAPI } from '../services/api';
 import { Users, Shield, ShieldOff } from 'lucide-react';
 
 
@@ -17,32 +18,39 @@ const ROLE_VARIANT = {
 };
 
 export function UserManagementPage() {
-  const { success } = useToast();
+  const { success, error: showError } = useToast();
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
 
+  useEffect(() => {
+    userAPI.getAll()
+      .then(data => setUsers(Array.isArray(data) ? data : []))
+      .catch(err => showError('Failed to load users: ' + err.message));
+  }, []);
+
   const tabs = [
     { id: 'all', label: 'All', icon: Users, count: users.length },
-    { id: 'attendee', label: 'Attendees', count: users.filter(u => u.role === 'Attendee').length },
-    { id: 'organizer', label: 'Organizers', count: users.filter(u => u.role === 'Organizer').length },
-    { id: 'manager', label: 'Managers', count: users.filter(u => u.role === 'Manager').length },
+    { id: 'attendee', label: 'Attendees', count: users.filter(u => u.userRole === 'Attendee').length },
+    { id: 'organizer', label: 'Organizers', count: users.filter(u => u.userRole === 'Organizer').length },
+    { id: 'manager', label: 'Managers', count: users.filter(u => u.userRole === 'Manager').length },
   ];
 
   const filtered = users.filter((u) => {
-    const matchesTab = activeTab === 'all' || u.role.toLowerCase() === activeTab;
+    const matchesTab = activeTab === 'all' || (u.userRole || '').toLowerCase() === activeTab;
     const matchesSearch =
-      u.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
+      (u.fullName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(search.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
+  // Status toggling is UI-only for now (no backend suspend endpoint yet)
   const toggleStatus = (userId) => {
     setUsers(users.map(u => {
-      if (u.id === userId) {
-        const newStatus = u.status === 'Active' ? 'Suspended' : 'Active';
+      if (u.userId === userId) {
+        const newStatus = u._uiStatus === 'Suspended' ? 'Active' : 'Suspended';
         success(newStatus === 'Active' ? 'User reactivated' : 'User suspended');
-        return { ...u, status: newStatus };
+        return { ...u, _uiStatus: newStatus };
       }
       return u;
     }));
@@ -65,28 +73,28 @@ export function UserManagementPage() {
       ),
     },
     {
-      key: 'role',
+      key: 'userRole',
       label: 'Role',
       width: '110px',
       render: (val) => <Badge variant={ROLE_VARIANT[val] || 'default'}>{val}</Badge>,
     },
     {
-      key: 'joinedAt',
+      key: 'createdAt',
       label: 'Joined',
       width: '110px',
       render: (val) => (
         <span className="text-[var(--color-ink-secondary)]">
-          {new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {val ? new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
         </span>
       ),
     },
     {
-      key: 'status',
+      key: '_uiStatus',
       label: 'Status',
       width: '100px',
       render: (val) => (
-        <Badge variant={val === 'Active' ? 'success' : 'danger'}>
-          {val}
+        <Badge variant={!val || val === 'Active' ? 'success' : 'danger'}>
+          {val || 'Active'}
         </Badge>
       ),
     },
@@ -98,14 +106,14 @@ export function UserManagementPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => toggleStatus(row.id)}
-          className={row.status === 'Active'
-            ? 'text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]'
-            : 'text-[var(--color-success)] hover:bg-[var(--color-success-light)]'
+          onClick={() => toggleStatus(row.userId)}
+          className={row._uiStatus === 'Suspended'
+            ? 'text-[var(--color-success)] hover:bg-[var(--color-success-light)]'
+            : 'text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]'
           }
         >
-          {row.status === 'Active' ? <ShieldOff size={14} /> : <Shield size={14} />}
-          {row.status === 'Active' ? 'Suspend' : 'Activate'}
+          {row._uiStatus === 'Suspended' ? <Shield size={14} /> : <ShieldOff size={14} />}
+          {row._uiStatus === 'Suspended' ? 'Activate' : 'Suspend'}
         </Button>
       ),
     },

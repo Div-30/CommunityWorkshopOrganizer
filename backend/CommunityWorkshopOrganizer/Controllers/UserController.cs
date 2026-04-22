@@ -29,9 +29,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             return CreatedAtAction(nameof(GetUserById), new { id = result.Data!.UserId }, result.Data);
         }
 
-        // GET /api/user — Admin only: view all users
+        // GET /api/user — Admin/Manager: view all users
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public ActionResult<IEnumerable<User>> GetAllUsers()
         {
             var result = _userService.GetAllUsers();

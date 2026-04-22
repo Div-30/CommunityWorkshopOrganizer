@@ -24,11 +24,11 @@ namespace CommunityWorkshopOrganizer.Services
                 return (WorkshopResultStatus.ValidationError, "Workshop capacity must be greater than zero.", null);
             }
 
-            // Verify the organiser exists and has the correct role
-            var organizer = _context.Users.FirstOrDefault(u => u.UserId == organizerId && u.UserRole == "Organiser");
+            // Verify the organizer exists and has the correct role
+            var organizer = _context.Users.FirstOrDefault(u => u.UserId == organizerId && u.UserRole == "Organizer");
             if (organizer == null)
             {
-                return (WorkshopResultStatus.NotFound, "Organiser not found.", null);
+                return (WorkshopResultStatus.NotFound, "Organizer not found.", null);
             }
 
             // Set OrganizerId from the authenticated token — not from request body
@@ -53,7 +53,7 @@ namespace CommunityWorkshopOrganizer.Services
                 return (WorkshopResultStatus.NotFound, "Workshop not found.", null);
             }
 
-            // Only the organiser who owns this workshop can update it
+            // Only the organizer who owns this workshop can update it
             if (workshop.OrganizerId != organizerId)
             {
                 return (WorkshopResultStatus.Forbidden, "You are not authorised to update this workshop.", null);
@@ -89,7 +89,7 @@ namespace CommunityWorkshopOrganizer.Services
                 return (WorkshopResultStatus.NotFound, "Workshop not found.");
             }
 
-            // Only the organiser who owns this workshop can delete it
+            // Only the organizer who owns this workshop can delete it
             if (workshop.OrganizerId != organizerId)
             {
                 return (WorkshopResultStatus.Forbidden, "You are not authorised to delete this workshop.");

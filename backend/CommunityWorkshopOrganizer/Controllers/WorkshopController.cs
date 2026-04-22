@@ -25,9 +25,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             return Ok(result.Data);
         }
 
-        // GET /api/workshop/my — Organiser only: get their own created workshops
+        // GET /api/workshop/my — Organizer only: get their own created workshops
         [HttpGet("my")]
-        [Authorize(Roles = "Organiser")]
+        [Authorize(Roles = "Organizer")]
         public ActionResult<IEnumerable<Workshop>> GetMyWorkshops()
         {
             var organizerId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -47,9 +47,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             return Ok(result.Data);
         }
 
-        // POST /api/workshop — Organiser only; OrganizerId auto-set from token
+        // POST /api/workshop — Organizer only; OrganizerId auto-set from token
         [HttpPost]
-        [Authorize(Roles = "Organiser")]
+        [Authorize(Roles = "Organizer")]
         public ActionResult<Workshop> CreateWorkshop([FromBody] Workshop workshop)
         {
             var organizerId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -64,9 +64,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             return CreatedAtAction(nameof(GetWorkshopById), new { id = result.Data!.WorkshopId }, result.Data);
         }
 
-        // PUT /api/workshop/{id} — Organiser only; can only update their own workshop
+        // PUT /api/workshop/{id} — Organizer only; can only update their own workshop
         [HttpPut("{id}")]
-        [Authorize(Roles = "Organiser")]
+        [Authorize(Roles = "Organizer")]
         public ActionResult<Workshop> UpdateWorkshop(int id, [FromBody] Workshop updatedData)
         {
             var organizerId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -81,9 +81,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             return Ok(result.Data);
         }
 
-        // DELETE /api/workshop/{id} — Organiser only; can only delete their own workshop
+        // DELETE /api/workshop/{id} — Organizer only; can only delete their own workshop
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Organiser")]
+        [Authorize(Roles = "Organizer")]
         public IActionResult DeleteWorkshop(int id)
         {
             var organizerId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -98,9 +98,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             return Ok(new { Message = result.Message });
         }
 
-        // PUT /api/workshop/{id}/approve — Admin only
+        // PUT /api/workshop/{id}/approve — Admin/Manager only
         [HttpPut("{id}/approve")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult ApproveWorkshop(int id)
         {
             var result = _workshopService.ApproveWorkshop(id);
@@ -119,9 +119,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             public string Reason { get; set; } = string.Empty;
         }
 
-        // PUT /api/workshop/{id}/reject — Admin only
+        // PUT /api/workshop/{id}/reject — Admin/Manager only
         [HttpPut("{id}/reject")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult RejectWorkshop(int id, [FromBody] RejectWorkshopRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Reason))

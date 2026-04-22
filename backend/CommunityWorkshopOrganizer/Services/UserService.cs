@@ -30,7 +30,7 @@ namespace CommunityWorkshopOrganizer.Services
             }
 
             // Only "Attendee" is permitted via self-registration.
-            // "Organiser" and "Admin" roles must be assigned by an Admin.
+            // "Organizer" and "Admin" roles must be assigned by an Admin.
             if (user.UserRole != "Attendee")
             {
                 return (UserResultStatus.ValidationError, "Only 'Attendee' role is allowed for self-registration.", null);

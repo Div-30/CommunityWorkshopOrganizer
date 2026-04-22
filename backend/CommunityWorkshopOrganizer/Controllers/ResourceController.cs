@@ -36,9 +36,9 @@ namespace CommunityWorkshopOrganizer.Controllers
             return Ok(result.Data);
         }
 
-        // POST /api/resource — Organiser only; can only add to their own workshop
+        // POST /api/resource — Organizer only; can only add to their own workshop
         [HttpPost]
-        [Authorize(Roles = "Organiser")]
+        [Authorize(Roles = "Organizer")]
         public IActionResult AddResource([FromBody] Resource resource)
         {
             var organizerId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -57,9 +57,9 @@ namespace CommunityWorkshopOrganizer.Controllers
                 new { workshopId = result.Data!.WorkshopId }, result.Data);
         }
 
-        // DELETE /api/resource/{id} — Organiser only; can only delete from their own workshop
+        // DELETE /api/resource/{id} — Organizer only; can only delete from their own workshop
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Organiser")]
+        [Authorize(Roles = "Organizer")]
         public IActionResult DeleteResource(int id)
         {
             var organizerId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CommunityWorkshopOrganizer.Migrations
 {
     [DbContext(typeof(ApiContext))]
-    [Migration("20260420222721_AddRejectionAndOrganiserFlow")]
-    partial class AddRejectionAndOrganiserFlow
+    [Migration("20260420222721_AddRejectionAndOrganizerFlow")]
+    partial class AddRejectionAndOrganizerFlow
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,7 +20,7 @@ namespace CommunityWorkshopOrganizer.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
 
-            modelBuilder.Entity("CommunityWorkshopOrganizer.Models.OrganiserRequest", b =>
+            modelBuilder.Entity("CommunityWorkshopOrganizer.Models.OrganizerRequest", b =>
                 {
                     b.Property<int>("RequestId")
                         .ValueGeneratedOnAdd()
@@ -47,7 +47,7 @@ namespace CommunityWorkshopOrganizer.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("OrganiserRequests");
+                    b.ToTable("OrganizerRequests");
                 });
 
             modelBuilder.Entity("CommunityWorkshopOrganizer.Models.Registration", b =>
@@ -179,7 +179,7 @@ namespace CommunityWorkshopOrganizer.Migrations
                     b.ToTable("Workshops");
                 });
 
-            modelBuilder.Entity("CommunityWorkshopOrganizer.Models.OrganiserRequest", b =>
+            modelBuilder.Entity("CommunityWorkshopOrganizer.Models.OrganizerRequest", b =>
                 {
                     b.HasOne("CommunityWorkshopOrganizer.Models.User", "User")
                         .WithMany()
